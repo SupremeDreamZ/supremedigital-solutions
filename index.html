@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SupremeDigital Solutions - Premium Digital Services</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <h1>SupremeDigital</h1>
+                <span>Solutions</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#services">Services</a></li>
+                <li><a href="#portfolio">Portfolio</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <h2>Transform Your Digital Presence</h2>
+                <p>Premium web development, data visualization, and automation services powered by cutting-edge AI technology</p>
+                <div class="cta-buttons">
+                    <button class="btn-primary" onclick="openContactForm()">Start Your Project</button>
+                    <button class="btn-secondary" onclick="viewPortfolio()">View Our Work</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="services" class="services">
+            <h2>Our Services</h2>
+            <div class="service-grid">
+                <div class="service-card">
+                    <h3>🌐 Web Development</h3>
+                    <p>Custom websites and web applications built with modern technologies</p>
+                    <ul>
+                        <li>Responsive Design</li>
+                        <li>E-commerce Solutions</li>
+                        <li>Progressive Web Apps</li>
+                        <li>API Integration</li>
+                    </ul>
+                    <div class="price">Starting at $2,500</div>
+                </div>
+
+                <div class="service-card">
+                    <h3>📊 Data Visualization</h3>
+                    <p>Transform your data into compelling visual stories and interactive dashboards</p>
+                    <ul>
+                        <li>Custom Charts & Graphs</li>
+                        <li>Interactive Dashboards</li>
+                        <li>Real-time Analytics</li>
+                        <li>Business Intelligence</li>
+                    </ul>
+                    <div class="price">Starting at $1,500</div>
+                </div>
+
+                <div class="service-card">
+                    <h3>⚡ Performance Optimization</h3>
+                    <p>Comprehensive web auditing and optimization for maximum performance</p>
+                    <ul>
+                        <li>SEO Optimization</li>
+                        <li>Performance Audits</li>
+                        <li>Accessibility Testing</li>
+                        <li>Speed Optimization</li>
+                    </ul>
+                    <div class="price">Starting at $800</div>
+                </div>
+
+                <div class="service-card">
+                    <h3>🤖 Automation Solutions</h3>
+                    <p>Custom automation tools to streamline your business processes</p>
+                    <ul>
+                        <li>Web Scraping</li>
+                        <li>Data Collection</li>
+                        <li>Process Automation</li>
+                        <li>API Development</li>
+                    </ul>
+                    <div class="price">Starting at $1,200</div>
+                </div>
+
+                <div class="service-card">
+                    <h3>💻 GitHub Management</h3>
+                    <p>Professional code repository management and development workflows</p>
+                    <ul>
+                        <li>Repository Setup</li>
+                        <li>CI/CD Pipelines</li>
+                        <li>Code Reviews</li>
+                        <li>Team Collaboration</li>
+                    </ul>
+                    <div class="price">Starting at $600</div>
+                </div>
+
+                <div class="service-card">
+                    <h3>🎯 Digital Strategy</h3>
+                    <p>Comprehensive digital transformation consulting and implementation</p>
+                    <ul>
+                        <li>Technology Consulting</li>
+                        <li>Digital Transformation</li>
+                        <li>System Integration</li>
+                        <li>Training & Support</li>
+                    </ul>
+                    <div class="price">Starting at $2,000</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="portfolio" class="portfolio">
+            <h2>Recent Projects</h2>
+            <div class="portfolio-grid">
+                <div class="portfolio-item">
+                    <h4>E-commerce Platform</h4>
+                    <p>Full-stack e-commerce solution with payment integration</p>
+                    <div class="tech-stack">React, Node.js, MongoDB</div>
+                </div>
+                <div class="portfolio-item">
+                    <h4>Analytics Dashboard</h4>
+                    <p>Real-time business intelligence dashboard</p>
+                    <div class="tech-stack">D3.js, Python, PostgreSQL</div>
+                </div>
+                <div class="portfolio-item">
+                    <h4>Automation Suite</h4>
+                    <p>Custom web scraping and data processing pipeline</p>
+                    <div class="tech-stack">Python, Selenium, AWS</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="contact">
+            <h2>Ready to Start Your Project?</h2>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <h3>Get in Touch</h3>
+                    <p>📧 hello@supremedigital.solutions</p>
+                    <p>📱 +1 (555) 123-4567</p>
+                    <p>🌐 Available 24/7 for consultations</p>
+                </div>
+                <form class="contact-form" id="contactForm">
+                    <input type="text" placeholder="Your Name" required>
+                    <input type="email" placeholder="Your Email" required>
+                    <select required title="Select a service">
+                        <option value="">Select Service</option>
+                        <option value="web-dev">Web Development</option>
+                        <option value="data-viz">Data Visualization</option>
+                        <option value="optimization">Performance Optimization</option>
+                        <option value="automation">Automation Solutions</option>
+                        <option value="github">GitHub Management</option>
+                        <option value="strategy">Digital Strategy</option>
+                    </select>
+                    <textarea placeholder="Project Description" rows="4" required></textarea>
+                    <button type="submit" class="btn-primary">Send Proposal Request</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 SupremeDigital Solutions. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
