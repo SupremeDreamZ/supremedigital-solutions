@@ -1,0 +1,417 @@
+is.togglePause();
+    }, { passive: false });
+    window.addEventListener('keyup', (event) => {
+      this.keys[event.key.toLowerCase()] = false;
+    });
+
+    const moveZone = $('#touchMove');
+    const move = (event) => {
+      const rect = this.canvas.getBoundingClientRect();
+      this.pointer = {
+        x: clamp(event.clientX - rect.left, 0, rect.width),
+        y: clamp(event.clientY - rect.top, 0, rect.height)
+      };
+    };
+    moveZone?.addEventListener('pointerdown', (event) => {
+      moveZone.setPointerCapture(event.pointerId);
+      move(event);
+    });
+    moveZone?.addEventListener('pointermove', (event) => {
+      if (event.buttons || event.pressure > 0) move(event);
+    });
+    moveZone?.addEventListener('pointerup', () => { this.pointer = null; });
+    moveZone?.addEventListener('pointercancel', () => { this.pointer = null; });
+
+    if (this.touch) {
+      const moveAnywhere = (event) => {
+        if (event.target.closest('button,.game-hud')) return;
+        const rect = this.canvas.getBoundingClientRect();
+        this.pointer = {
+          x: clamp(event.clientX - rect.left, 0, rect.width),
+          y: clamp(event.clientY - rect.top, 0, rect.height)
+        };
+      };
+      this.shell.addEventListener('pointerdown', (event) => {
+        if (event.target.closest('button,.game-hud')) return;
+        this.shell.setPointerCapture?.(event.pointerId);
+        moveAnywhere(event);
+      });
+      this.shell.addEventListener('pointermove', (event) => {
+        if ((event.buttons || event.pressure > 0) && !event.target.closest('button,.game-hud')) moveAnywhere(event);
+      });
+      this.shell.addEventListener('pointerup', (event) => {
+        if (!event.target.closest('button,.game-hud')) this.pointer = null;
+      });
+      this.shell.addEventListener('pointercancel', () => { this.pointer = null; });
+    }
+
+    if (!this.touch) {
+      const aim = (event) => {
+        const rect = this.canvas.getBoundingClientRect();
+        this.pointer = { x: clamp(event.clientX - rect.left, 0, rect.width), y: clamp(event.clientY - rect.top, 0, rect.height) };
+      };
+      this.canvas.addEventListener('pointerdown', (event) => {
+        this.canvas.setPointerCapture?.(event.pointerId);
+        this.mouseFiring = true;
+        aim(event);
+      });
+      this.canvas.addEventListener('pointermove', (event) => {
+        if (this.mouseFiring || event.buttons) aim(event);
+      });
+      const stopMouse = () => { this.mouseFiring = false; this.pointer = null; };
+      this.canvas.addEventListener('pointerup', stopMouse);
+      this.canvas.addEventListener('pointercancel', stopMouse);
+      this.canvas.addEventListener('contextmenu', (event) => event.preventDefault());
+    }
+  },
+
+  resize() {
+    if (!this.canvas || !this.shell || !this.context) return;
+    const rect = this.shell.getBoundingClientRect();
+    this.width = Math.max(320, rect.width);
+    this.height = Math.max(300, rect.height);
+    this.dpr = Math.min(window.devicePixelRatio || 1, this.quality === 'high' ? 2 : this.quality === 'medium' ? 1.35 : 1);
+    this.canvas.width = Math.floor(this.width * this.dpr);
+    this.canvas.height = Math.floor(this.height * this.dpr);
+    this.context.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    this.player.x = clamp(this.player.x || this.width * 0.5, 30, this.width - 30);
+    this.player.y = clamp(this.player.y || this.height * 0.82, 60, this.height - 30);
+  },
+
+  unlockedWeapons() {
+    const result = [0];
+    if (validation.has('tested')) result.push(1);
+    if (validation.has('consistency')) result.push(2);
+    if (validation.has('burn')) result.push(3);
+    return result;
+  },
+
+  switchWeapon(direction) {
+    const unlocked = this.unlockedWeapons();
+    const currentIndex = Math.max(0, unlocked.indexOf(this.currentWeapon));
+    const nextIndex = (currentIndex + direction + unlocked.length) % unlocked.length;
+    this.currentWeapon = unlocked[nextIndex];
+    this.updateHud();
+    tone(300 + this.currentWeapon * 80, 0.05, 'triangle', 420 + this.currentWeapon * 90, 0.07);
+  },
+
+  start() {
+    const intro = $('#arcadeIntro');
+    const ending = $('#ending');
+    if (intro) intro.hidden = true;
+    if (ending) ending.hidden = true;
+    this.shell.hidden = false;
+    document.body.classList.add('game-active');
+    clearTimeout(toastTimer);
+    const toast = $('#toast');
+    if (toast) toast.hidden = true;
+    this.resize();
+    requestAnimationFrame(() => this.resize());
+    this.reduceShake = Boolean($('#reduceShake')?.checked);
+    this.reduceFlash = Boolean($('#reduceFlash')?.checked);
+    this.reset();
+    this.running = true;
+    this.paused = false;
+    this.ended = false;
+    soundEnabled = true;
+    ensureAudio()?.resume();
+    $('#muteGame').textContent = '◖))';
+    this.lastTime = performance.now();
+    cancelAnimationFrame(this.raf);
+    this.raf = requestAnimationFrame((time) => this.loop(time));
+    tone(230, 0.16, 'sawtooth', 520, 0.12);
+  },
+
+  reset() {
+    this.score = 0;
+    this.combo = 1;
+    this.comboTimer = 0;
+    this.wave = 1;
+    this.waveTimer = 0.45;
+    this.waveBanner = '';
+    this.waveBannerTimer = 0;
+    this.currentWeapon = 0;
+    this.ash = validation.has('burn') ? 30 : 0;
+    this.shake = 0;
+    this.pointer = null;
+    this.mouseFiring = false;
+    this.bullets = [];
+    this.enemyBullets = [];
+    this.enemies = [];
+    this.particles = [];
+    this.rings = [];
+    this.spawnQueue = [];
+    this.spawnSerial = 0;
+    this.boss = null;
+    const playerRadius = clamp(this.width * 0.04, this.touch ? 31 : 34, this.touch ? 43 : 52);
+    this.player = { x: this.width * 0.5, y: this.height * (this.touch ? 0.74 : 0.82), radius: playerRadius, speed: this.touch ? 560 : 380, health: 100, cooldown: 0, shield: 0, flash: 0 };
+    const starCount = this.quality === 'high' ? 120 : this.quality === 'medium' ? 72 : 38;
+    this.stars = Array.from({ length: starCount }, () => ({ x: Math.random() * this.width, y: Math.random() * this.height, size: random(0.6, 2.2), speed: random(16, 54) }));
+    this.queueWave(1);
+    this.updateHud();
+  },
+
+  queueWave(number) {
+    const definition = this.waves[number - 1];
+    if (!definition) return;
+    this.wave = number;
+    this.spawnQueue = [];
+    this.waveBanner = `WAVE ${number} // ${definition.name}`;
+    this.waveBannerTimer = 2.3;
+    if (definition.boss) {
+      this.spawnBoss();
+      this.updateHud();
+      return;
+    }
+    definition.entries.forEach(([type, count]) => {
+      for (let index = 0; index < count; index += 1) this.spawnQueue.push(type);
+    });
+    for (let index = this.spawnQueue.length - 1; index > 0; index -= 1) {
+      const swap = Math.floor(Math.random() * (index + 1));
+      [this.spawnQueue[index], this.spawnQueue[swap]] = [this.spawnQueue[swap], this.spawnQueue[index]];
+    }
+    this.spawnSerial = 0;
+    const openingFormation = Math.min(this.touch ? 7 : 10, this.spawnQueue.length);
+    for (let index = 0; index < openingFormation; index += 1) this.spawnEnemy(this.spawnQueue.shift());
+    this.waveTimer = 0.34;
+    this.updateHud();
+  },
+
+  spawnEnemy(type) {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const scale = clamp(this.width / 650, 1.08, 1.78);
+    const serial = this.spawnSerial++;
+    const columns = this.touch ? 4 : clamp(Math.floor(this.width / 116), 5, 9);
+    const row = Math.floor(serial / columns) % 3;
+    const column = serial % columns;
+    const spacing = this.width / (columns + 1);
+    const formationX = clamp((column + 1) * spacing + (row % 2 ? spacing * 0.18 : 0), 42, this.width - 42);
+    const formationY = clamp(118 + row * (this.touch ? 58 : 68), 96, this.height * 0.38);
+    const enemy = {
+      type,
+      x: type === 'flanker' ? (side < 0 ? -36 : this.width + 36) : formationX,
+      y: type === 'flanker' ? random(110, this.height * 0.38) : -70 - row * 20,
+      baseX: formationX,
+      baseY: formationY,
+      age: 0,
+      entry: 0,
+      vx: 0,
+      vy: random(24, 50),
+      width: 25 * scale,
+      height: 25 * scale,
+      health: 2,
+      maxHealth: 2,
+      fire: random(1.05, 2.15),
+      phase: random(0, Math.PI * 2),
+      shield: 0,
+      score: 100,
+      dead: false,
+      hitFlash: 0
+    };
+    if (type === 'flanker') Object.assign(enemy, { vx: side * random(105, 165), vy: random(16, 32), width: 20 * scale, height: 20 * scale, health: 1, maxHealth: 1, score: 170 });
+    if (type === 'shield') Object.assign(enemy, { width: 31 * scale, height: 31 * scale, health: 5, maxHealth: 5, shield: 2, vy: random(14, 29), score: 230 });
+    if (type === 'disruptor') Object.assign(enemy, { width: 27 * scale, height: 27 * scale, health: 3, maxHealth: 3, fire: random(0.75, 1.35), score: 275 });
+    this.enemies.push(enemy);
+  },
+
+  spawnBoss() {
+    const scale = clamp(this.width / 650, 1.05, 1.75);
+    const boss = {
+      type: 'boss', x: this.width * 0.5, y: 105, vx: 120, vy: 0,
+      width: 126 * scale, height: 72 * scale, health: 130, maxHealth: 130,
+      fire: 0.55, phase: 0, shield: 0, score: 5000, dead: false, hitFlash: 0
+    };
+    this.boss = boss;
+    this.enemies.push(boss);
+    tone(150, 0.36, 'sawtooth', 70, 0.14);
+  },
+
+  firePlayer() {
+    const p = this.player;
+    if (this.currentWeapon === 0) {
+      this.bullets.push({ x: p.x, y: p.y - 22, vx: 0, vy: -620, radius: 4, damage: validation.has('genetics') ? 2.4 : 1.8, color: '#c8ff3d', pierce: 0, kind: 'precision' });
+      p.cooldown = 0.14;
+      tone(460, 0.035, 'square', 390, 0.055);
+    }
+    if (this.currentWeapon === 1) {
+      [-0.3, 0, 0.3].forEach((angle) => {
+        this.bullets.push({ x: p.x, y: p.y - 20, vx: Math.sin(angle) * 260, vy: -Math.cos(angle) * 500, radius: 4, damage: 1.35, color: '#7fdcf2', pierce: 0, kind: 'spread' });
+      });
+      p.cooldown = 0.24;
+      tone(540, 0.045, 'triangle', 410, 0.05);
+    }
+    if (this.currentWeapon === 2) {
+      this.bullets.push({ x: p.x, y: p.y - 22, vx: 0, vy: -480, radius: 7, damage: 2.8, color: '#c4a9dd', pierce: 2, kind: 'root' });
+      p.shield = Math.min(2, p.shield + 0.6);
+      p.cooldown = 0.31;
+      tone(330, 0.06, 'triangle', 240, 0.055);
+    }
+    if (this.currentWeapon === 3) {
+      this.bullets.push({ x: p.x, y: p.y - 24, vx: 0, vy: -700, radius: 5, damage: 4.2, color: '#fff2da', pierce: 8, kind: 'ash' });
+      p.cooldown = 0.26;
+      noise(0.035, 0.035, 1300);
+    }
+  },
+
+  whiteAsh() {
+    if (!validation.has('burn')) {
+      showToast('VALIDATE THE WHITE-ASH CARD IN THE POSTER TO UNLOCK THIS ATTACK.');
+      return;
+    }
+    if (this.ash < 100 || !this.running || this.paused) return;
+    this.ash = 0;
+    this.enemyBullets.length = 0;
+    const ashKills = [];
+    this.enemies.forEach((enemy) => {
+      enemy.health -= enemy.type === 'boss' ? 22 : 7;
+      enemy.hitFlash = 0.16;
+      if (enemy.health <= 0) {
+        enemy.dead = true;
+        ashKills.push(enemy);
+      }
+    });
+    ashKills.forEach((enemy) => this.killEnemy(enemy));
+    const particleCount = this.quality === 'high' ? 70 : this.quality === 'medium' ? 38 : 22;
+    for (let index = 0; index < particleCount; index += 1) {
+      const angle = (index / particleCount) * Math.PI * 2;
+      this.particles.push({ x: this.player.x, y: this.player.y, vx: Math.cos(angle) * random(100, 360), vy: Math.sin(angle) * random(100, 360), life: random(0.35, 0.85), age: 0, size: random(2, 6), color: '#f3f0e5' });
+    }
+    this.rings.push({ x: this.player.x, y: this.player.y, age: 0, life: 0.62, start: 18, end: Math.max(this.width, this.height) * 0.92, color: '#f3f0e5', width: 7 });
+    if (!this.reduceShake) this.shake = 18;
+    haptic([30, 30, 55]);
+    tone(190, 0.22, 'square', 880, 0.15);
+    noise(0.15, 0.065, 550);
+    this.updateHud();
+  },
+
+  damagePlayer(amount) {
+    if (this.player.shield > 0) {
+      amount *= 0.34;
+      this.player.shield = Math.max(0, this.player.shield - 0.75);
+    }
+    this.player.health = clamp(this.player.health - amount, 0, 100);
+    this.player.flash = 0.18;
+    this.combo = 1;
+    this.comboTimer = 0;
+    if (!this.reduceShake) this.shake = Math.max(this.shake, 9);
+    tone(180, 0.07, 'sawtooth', 100, 0.08);
+    noise(0.05, 0.055, 450);
+    haptic(18);
+    this.updateHud();
+    if (this.player.health <= 0) this.finish(false);
+  },
+
+  addScore(points) {
+    this.score += points * this.combo;
+    this.combo = clamp(this.combo + 1, 1, 9);
+    this.comboTimer = 2.5;
+    this.ash = clamp(this.ash + points / 19, 0, 100);
+    this.updateHud();
+  },
+
+  killEnemy(enemy) {
+    this.addScore(enemy.score || 100);
+    const particleCount = this.quality === 'high' ? 12 : this.quality === 'medium' ? 7 : 4;
+    for (let index = 0; index < particleCount; index += 1) {
+      this.particles.push({ x: enemy.x, y: enemy.y, vx: random(-150, 150), vy: random(-150, 150), life: random(0.25, 0.65), age: 0, size: random(2, 5), color: enemy.type === 'boss' ? '#fff0d0' : enemy.type === 'shield' ? '#bda7d0' : '#a8d94b' });
+    }
+    this.rings.push({ x: enemy.x, y: enemy.y, age: 0, life: enemy.type === 'boss' ? 0.7 : 0.34, start: 4, end: enemy.type === 'boss' ? 150 : 42, color: enemy.type === 'boss' ? '#fff0d0' : '#a8d94b', width: enemy.type === 'boss' ? 6 : 3 });
+    noise(0.03, 0.028, 800);
+    haptic(enemy.type === 'boss' ? [35, 25, 60] : 7);
+    if (enemy.type === 'boss') {
+      this.boss = null;
+      this.finish(true);
+    }
+  },
+
+  update(dt) {
+    const player = this.player;
+    player.cooldown -= dt;
+    player.shield = Math.max(0, player.shield - dt * 0.09);
+    player.flash = Math.max(0, player.flash - dt);
+    this.shake = Math.max(0, this.shake - dt * 27);
+    this.waveBannerTimer = Math.max(0, this.waveBannerTimer - dt);
+
+    let xInput = 0;
+    let yInput = 0;
+    if (this.keys.a || this.keys.arrowleft) xInput -= 1;
+    if (this.keys.d || this.keys.arrowright) xInput += 1;
+    if (this.keys.w || this.keys.arrowup) yInput -= 1;
+    if (this.keys.s || this.keys.arrowdown) yInput += 1;
+
+    if (this.pointer) {
+      const dx = this.pointer.x - player.x;
+      const dy = this.pointer.y - player.y;
+      const maxStep = player.speed * dt;
+      player.x += clamp(dx, -maxStep, maxStep);
+      player.y += clamp(dy, -maxStep, maxStep);
+    } else {
+      const magnitude = Math.hypot(xInput, yInput) || 1;
+      player.x += (xInput / magnitude) * player.speed * dt;
+      player.y += (yInput / magnitude) * player.speed * dt;
+    }
+    player.x = clamp(player.x, 28, this.width - 28);
+    const playerMaxY = this.touch ? this.height * 0.82 : this.height - 34;
+    player.y = clamp(player.y, this.height * 0.43, playerMaxY);
+
+    const shouldFire = this.touch || this.mouseFiring || this.keys[' '] || this.keys.enter;
+    if (shouldFire && player.cooldown <= 0) this.firePlayer();
+
+    if (this.comboTimer > 0) this.comboTimer -= dt;
+    else this.combo = 1;
+
+    const definition = this.waves[this.wave - 1];
+    if (this.spawnQueue.length > 0) {
+      this.waveTimer -= dt;
+      if (this.waveTimer <= 0) {
+        this.spawnEnemy(this.spawnQueue.shift());
+        this.waveTimer = definition.delay || 0.65;
+      }
+    } else if (!this.boss && this.enemies.length === 0 && this.wave < 5) {
+      this.queueWave(this.wave + 1);
+    }
+
+    this.bullets.forEach((bullet) => {
+      bullet.x += bullet.vx * dt;
+      bullet.y += bullet.vy * dt;
+    });
+    this.enemyBullets.forEach((bullet) => {
+      bullet.x += bullet.vx * dt;
+      bullet.y += bullet.vy * dt;
+    });
+
+    for (const enemy of this.enemies) {
+      enemy.phase += dt;
+      enemy.age = (enemy.age || 0) + dt;
+      enemy.entry = clamp((enemy.entry || 0) + dt * 2.35, 0, 1);
+      enemy.fire -= dt;
+      enemy.hitFlash = Math.max(0, (enemy.hitFlash || 0) - dt);
+      if (enemy.type === 'flanker') {
+        enemy.x += enemy.vx * dt;
+        enemy.y += enemy.vy * dt + Math.sin(enemy.phase * 5.4) * 28 * dt;
+        if (enemy.x < -42 || enemy.x > this.width + 42) enemy.vx *= -1;
+      } else if (enemy.type === 'boss') {
+        enemy.x += enemy.vx * dt;
+        enemy.y = 105 + Math.sin(enemy.phase * 1.6) * 12;
+        const bossMargin = enemy.width * 0.58;
+        if (enemy.x < bossMargin || enemy.x > this.width - bossMargin) enemy.vx *= -1;
+      } else {
+        enemy.baseY += enemy.vy * dt * 0.18;
+        const drift = enemy.type === 'disruptor' ? 42 : enemy.type === 'shield' ? 20 : 28;
+        const speed = enemy.type === 'disruptor' ? 2.9 : enemy.type === 'shield' ? 1.6 : 2.1;
+        const desiredX = enemy.baseX + Math.sin(enemy.phase * speed) * drift;
+        const entranceOffset = (1 - enemy.entry) * (95 + (enemy.baseY || 0) * 0.18);
+        const desiredY = enemy.baseY - entranceOffset + Math.cos(enemy.phase * 1.4) * 5;
+        const smoothing = Math.min(1, dt * 7.5);
+        enemy.x += (desiredX - enemy.x) * smoothing;
+        enemy.y += (desiredY - enemy.y) * smoothing;
+      }
+
+      if (enemy.fire <= 0) {
+        if (enemy.type === 'basic' || enemy.type === 'shield') {
+          this.enemyBullets.push({ x: enemy.x, y: enemy.y + enemy.height * 0.5, vx: 0, vy: random(190, 250), radius: 5, color: '#ff7550', kind: enemy.type === 'shield' ? 'stamp' : 'drop' });
+        } else if (enemy.type === 'flanker') {
+          this.enemyBullets.push({ x: enemy.x, y: enemy.y, vx: random(-90, 90), vy: random(220, 285), radius: 4, color: '#ffb761', kind: 'shard' });
+        } else if (enemy.type === 'disruptor') {
+          [-0.28, 0, 0.28].forEach((angle) => {
+            this.enemyBullets.push
