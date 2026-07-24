@@ -1,0 +1,439 @@
+({ x: enemy.x, y: enemy.y, vx: Math.sin(angle) * 190, vy: Math.cos(angle) * 235, radius: 4, color: '#f15cae', kind: 'percent' });
+          });
+        } else if (enemy.type === 'boss') {
+          for (let index = -2; index <= 2; index += 1) {
+            this.enemyBullets.push({ x: enemy.x + index * 16, y: enemy.y + 30, vx: index * 44, vy: 245, radius: 6, color: '#fff0e0', kind: 'invoice' });
+          }
+        }
+        enemy.fire = enemy.type === 'boss' ? 0.58 : random(0.82, 1.75);
+      }
+
+      if (enemy.y > this.height + 70) {
+        enemy.dead = true;
+        this.damagePlayer(8);
+      }
+      if (Math.hypot(enemy.x - player.x, enemy.y - player.y) < enemy.width * 0.48 + player.radius) {
+        if (enemy.type === 'boss') {
+          this.damagePlayer(24);
+          enemy.vx *= -1;
+          enemy.y = Math.max(80, enemy.y - 24);
+        } else {
+          enemy.dead = true;
+          this.damagePlayer(12);
+        }
+      }
+    }
+
+    for (const bullet of this.bullets) {
+      for (const enemy of this.enemies) {
+        if (enemy.dead) continue;
+        const hit = Math.abs(bullet.x - enemy.x) < enemy.width * 0.55 + bullet.radius && Math.abs(bullet.y - enemy.y) < enemy.height * 0.55 + bullet.radius;
+        if (!hit) continue;
+        let damage = bullet.damage;
+        if (enemy.shield > 0) {
+          enemy.shield -= 1;
+          damage *= 0.45;
+        }
+        enemy.health -= damage;
+        enemy.hitFlash = 0.09;
+        bullet.pierce -= 1;
+        if (bullet.pierce < 0) bullet.dead = true;
+        if (enemy.health <= 0) {
+          enemy.dead = true;
+          this.killEnemy(enemy);
+        }
+        break;
+      }
+    }
+
+    for (const bullet of this.enemyBullets) {
+      if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.radius + bullet.radius) {
+        bullet.dead = true;
+        this.damagePlayer(bullet.radius >= 6 ? 15 : 9);
+      }
+    }
+
+    this.bullets = this.bullets.filter((bullet) => !bullet.dead && bullet.y > -60 && bullet.y < this.height + 60 && bullet.x > -60 && bullet.x < this.width + 60);
+    this.enemyBullets = this.enemyBullets.filter((bullet) => !bullet.dead && bullet.y < this.height + 80 && bullet.x > -80 && bullet.x < this.width + 80);
+    this.enemies = this.enemies.filter((enemy) => !enemy.dead && enemy.health > 0);
+
+    this.particles.forEach((particle) => {
+      particle.age += dt;
+      particle.x += particle.vx * dt;
+      particle.y += particle.vy * dt;
+      particle.vx *= 0.985;
+      particle.vy *= 0.985;
+    });
+    this.particles = this.particles.filter((particle) => particle.age < particle.life);
+    this.rings.forEach((ring) => { ring.age += dt; });
+    this.rings = this.rings.filter((ring) => ring.age < ring.life);
+    this.updateHud();
+  },
+
+  drawPlantPlayer(context, x, y, radius) {
+    context.save();
+    context.translate(x, y);
+
+    // Heavy offset shadow makes the player read like a pasted paper cutout.
+    context.save();
+    context.translate(4, 6);
+    context.globalAlpha = 0.62;
+    context.fillStyle = '#000';
+    context.beginPath();
+    context.moveTo(-radius * 0.72, radius * 0.42);
+    context.lineTo(radius * 0.72, radius * 0.42);
+    context.lineTo(radius * 0.5, radius * 1.08);
+    context.lineTo(-radius * 0.5, radius * 1.08);
+    context.closePath();
+    context.fill();
+    context.restore();
+
+    // Nursery pot.
+    context.fillStyle = '#20231c';
+    context.strokeStyle = '#777d69';
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(-radius * 0.72, radius * 0.38);
+    context.lineTo(radius * 0.72, radius * 0.38);
+    context.lineTo(radius * 0.5, radius * 1.04);
+    context.lineTo(-radius * 0.5, radius * 1.04);
+    context.closePath();
+    context.fill();
+    context.stroke();
+    context.fillStyle = '#0d0f0b';
+    context.fillRect(-radius * 0.82, radius * 0.27, radius * 1.64, radius * 0.24);
+
+    // Stem.
+    context.strokeStyle = '#8da64d';
+    context.lineWidth = Math.max(2, radius * 0.12);
+    context.lineCap = 'round';
+    context.beginPath();
+    context.moveTo(0, radius * 0.34);
+    context.lineTo(0, -radius * 0.92);
+    context.stroke();
+
+    // Serrated paper leaves, with alternating poster greens.
+    const leafColors = ['#617f45', '#87a75c', '#4c693b', '#748f4c', '#9db76e', '#58723f', '#7f9c55'];
+    for (let index = 0; index < 7; index += 1) {
+      const angle = (index / 7) * Math.PI * 2 - Math.PI / 2;
+      context.save();
+      context.rotate(angle);
+      context.translate(0, -radius * 0.18);
+      context.fillStyle = leafColors[index];
+      context.strokeStyle = '#27311f';
+      context.lineWidth = 1.2;
+      context.beginPath();
+      context.moveTo(0, -radius * 1.16);
+      context.lineTo(radius * 0.16, -radius * 0.83);
+      context.lineTo(radius * 0.08, -radius * 0.76);
+      context.lineTo(radius * 0.28, -radius * 0.58);
+      context.lineTo(radius * 0.09, -radius * 0.51);
+      context.lineTo(radius * 0.2, -radius * 0.3);
+      context.lineTo(0, -radius * 0.15);
+      context.lineTo(-radius * 0.2, -radius * 0.3);
+      context.lineTo(-radius * 0.09, -radius * 0.51);
+      context.lineTo(-radius * 0.28, -radius * 0.58);
+      context.lineTo(-radius * 0.08, -radius * 0.76);
+      context.lineTo(-radius * 0.16, -radius * 0.83);
+      context.closePath();
+      context.fill();
+      context.stroke();
+      context.restore();
+    }
+
+    // Purple-green bud clusters and orange pistils.
+    const buds = [
+      { x: 0, y: -radius * 0.96, r: radius * 0.42 },
+      { x: -radius * 0.38, y: -radius * 0.56, r: radius * 0.28 },
+      { x: radius * 0.38, y: -radius * 0.52, r: radius * 0.27 }
+    ];
+    buds.forEach((bud, budIndex) => {
+      context.fillStyle = budIndex === 0 ? '#7d6b89' : '#6f8652';
+      context.strokeStyle = '#a7b879';
+      context.lineWidth = 1.4;
+      context.beginPath();
+      context.arc(bud.x, bud.y, bud.r, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+      context.fillStyle = '#a699ae';
+      for (let dot = 0; dot < 5; dot += 1) {
+        const a = (dot / 5) * Math.PI * 2 + budIndex;
+        context.beginPath();
+        context.arc(bud.x + Math.cos(a) * bud.r * 0.5, bud.y + Math.sin(a) * bud.r * 0.5, Math.max(1, radius * 0.06), 0, Math.PI * 2);
+        context.fill();
+      }
+      context.strokeStyle = '#d67a34';
+      context.lineWidth = 1.3;
+      for (let hair = 0; hair < 3; hair += 1) {
+        const a = (hair / 3) * Math.PI * 2 + budIndex * 0.7;
+        context.beginPath();
+        context.moveTo(bud.x + Math.cos(a) * bud.r * 0.5, bud.y + Math.sin(a) * bud.r * 0.5);
+        context.lineTo(bud.x + Math.cos(a) * bud.r * 1.15, bud.y + Math.sin(a) * bud.r * 1.15);
+        context.stroke();
+      }
+    });
+
+    context.restore();
+  },
+
+  drawEnemy(context, enemy) {
+    const w = enemy.width;
+    const h = enemy.height;
+    context.save();
+    context.translate(enemy.x, enemy.y);
+
+    // Offset paper shadow. Every enemy reads like a bad idea cut out of gray card stock.
+    context.save();
+    context.translate(Math.max(2, w * 0.09), Math.max(3, h * 0.12));
+    context.globalAlpha = 0.62;
+    context.fillStyle = '#000';
+    if (enemy.type === 'boss') context.fillRect(-w * 0.52, -h * 0.5, w * 1.04, h);
+    else {
+      context.beginPath();
+      context.roundRect(-w * 0.56, -h * 0.56, w * 1.12, h * 1.12, Math.max(2, w * 0.08));
+      context.fill();
+    }
+    context.restore();
+
+    if (enemy.type === 'basic') {
+      // Sterile corporate pouch: sealed, gray, and proud of having no personality.
+      context.fillStyle = '#858980';
+      context.strokeStyle = '#d1d0c7';
+      context.lineWidth = Math.max(1.4, w * 0.065);
+      context.beginPath();
+      context.moveTo(-w * 0.5, -h * 0.55);
+      context.lineTo(w * 0.43, -h * 0.5);
+      context.lineTo(w * 0.53, h * 0.48);
+      context.lineTo(-w * 0.46, h * 0.55);
+      context.closePath();
+      context.fill();
+      context.stroke();
+      context.fillStyle = '#292c27';
+      context.fillRect(-w * 0.32, -h * 0.18, w * 0.64, h * 0.42);
+      context.fillStyle = '#bfc1b8';
+      context.fillRect(-w * 0.22, -h * 0.08, w * 0.44, h * 0.05);
+      context.fillRect(-w * 0.22, h * 0.03, w * 0.31, h * 0.04);
+      context.fillStyle = '#ef5f48';
+      context.beginPath();
+      context.arc(w * 0.3, h * 0.34, Math.max(2, w * 0.08), 0, Math.PI * 2);
+      context.fill();
+    } else if (enemy.type === 'flanker') {
+      // A suit-and-tie paper dart. Fast, sharp, deeply impressed with itself.
+      context.fillStyle = '#767a73';
+      context.strokeStyle = '#d7d4c8';
+      context.lineWidth = Math.max(1.2, w * 0.07);
+      context.beginPath();
+      context.moveTo(0, -h * 0.72);
+      context.lineTo(w * 0.7, h * 0.28);
+      context.lineTo(w * 0.18, h * 0.12);
+      context.lineTo(0, h * 0.72);
+      context.lineTo(-w * 0.18, h * 0.12);
+      context.lineTo(-w * 0.7, h * 0.28);
+      context.closePath();
+      context.fill();
+      context.stroke();
+      context.fillStyle = '#bd6537';
+      context.beginPath();
+      context.moveTo(0, -h * 0.28);
+      context.lineTo(w * 0.14, h * 0.08);
+      context.lineTo(0, h * 0.42);
+      context.lineTo(-w * 0.14, h * 0.08);
+      context.closePath();
+      context.fill();
+    } else if (enemy.type === 'shield') {
+      // Compliance clipboard: it blocks shots with paperwork instead of quality.
+      context.fillStyle = '#74617f';
+      context.strokeStyle = '#d8cee0';
+      context.lineWidth = Math.max(2, w * 0.08);
+      context.beginPath();
+      context.roundRect(-w * 0.54, -h * 0.58, w * 1.08, h * 1.16, Math.max(2, w * 0.08));
+      context.fill();
+      context.stroke();
+      context.fillStyle = '#d9d2c5';
+      context.fillRect(-w * 0.32, -h * 0.29, w * 0.64, h * 0.64);
+      context.fillStyle = '#3d4237';
+      context.fillRect(-w * 0.18, -h * 0.48, w * 0.36, h * 0.18);
+      context.strokeStyle = '#67843e';
+      context.lineWidth = Math.max(1.2, w * 0.05);
+      for (let row = 0; row < 3; row += 1) {
+        const yy = -h * 0.17 + row * h * 0.18;
+        context.beginPath();
+        context.moveTo(-w * 0.22, yy);
+        context.lineTo(-w * 0.12, yy + h * 0.07);
+        context.lineTo(0, yy - h * 0.06);
+        context.stroke();
+        context.fillStyle = '#6c7067';
+        context.fillRect(w * 0.05, yy - h * 0.025, w * 0.17, h * 0.05);
+      }
+      if (enemy.shield > 0) {
+        context.strokeStyle = 'rgba(218,205,232,.82)';
+        context.lineWidth = Math.max(2, w * 0.08);
+        context.beginPath();
+        context.arc(0, 0, w * 0.75, 0, Math.PI * 2);
+        context.stroke();
+      }
+    } else if (enemy.type === 'disruptor') {
+      // A screaming percentage badge: number worship weaponized.
+      context.fillStyle = '#bd4c88';
+      context.strokeStyle = '#f0c7df';
+      context.lineWidth = Math.max(1.4, w * 0.06);
+      context.beginPath();
+      for (let index = 0; index < 16; index += 1) {
+        const angle = (index / 16) * Math.PI * 2;
+        const length = index % 2 === 0 ? w * 0.72 : w * 0.47;
+        const x = Math.cos(angle) * length;
+        const y = Math.sin(angle) * length;
+        if (index === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      }
+      context.closePath();
+      context.fill();
+      context.stroke();
+      context.fillStyle = '#171811';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.font = `900 ${Math.max(9, w * 0.48)}px Impact, sans-serif`;
+      context.fillText('%', 0, h * 0.02);
+    } else if (enemy.type === 'boss') {
+      // Corporate Crop Director: industrial cabinet, KPI screen, fake chrome buds.
+      context.fillStyle = '#92958d';
+      context.strokeStyle = '#eee5ce';
+      context.lineWidth = Math.max(3, w * 0.025);
+      context.beginPath();
+      context.moveTo(-w * 0.5, -h * 0.46);
+      context.lineTo(w * 0.46, -h * 0.5);
+      context.lineTo(w * 0.52, h * 0.43);
+      context.lineTo(-w * 0.47, h * 0.5);
+      context.closePath();
+      context.fill();
+      context.stroke();
+
+      context.fillStyle = '#30332d';
+      context.fillRect(-w * 0.35, -h * 0.28, w * 0.7, h * 0.38);
+      context.fillStyle = '#b7d83e';
+      context.fillRect(-w * 0.27, -h * 0.19, w * 0.42, h * 0.075);
+      context.fillStyle = '#ef5f48';
+      context.fillRect(-w * 0.27, -h * 0.06, w * 0.56, h * 0.055);
+      context.fillStyle = '#d7d5ce';
+      context.font = `900 ${Math.max(8, w * 0.075)}px ui-monospace, monospace`;
+      context.textAlign = 'center';
+      context.fillText('KPI', 0, h * 0.07);
+
+      // Three chrome-gray pseudo buds under inspection lamps.
+      for (let bud = -1; bud <= 1; bud += 1) {
+        const bx = bud * w * 0.22;
+        const by = h * 0.27 + Math.abs(bud) * h * 0.03;
+        context.fillStyle = '#5f655b';
+        context.beginPath();
+        context.arc(bx, by, h * 0.12, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = '#9ca291';
+        for (let dot = 0; dot < 5; dot += 1) {
+          const angle = dot / 5 * Math.PI * 2;
+          context.beginPath();
+          context.arc(bx + Math.cos(angle) * h * 0.07, by + Math.sin(angle) * h * 0.07, h * 0.025, 0, Math.PI * 2);
+          context.fill();
+        }
+      }
+      context.strokeStyle = '#555a50';
+      context.lineWidth = 2;
+      context.beginPath();
+      context.arc(w * 0.38, h * 0.31, h * 0.11, 0, Math.PI * 2);
+      context.stroke();
+      for (let blade = 0; blade < 4; blade += 1) {
+        context.save();
+        context.translate(w * 0.38, h * 0.31);
+        context.rotate(enemy.phase * 3 + blade * Math.PI / 2);
+        context.fillStyle = '#555a50';
+        context.fillRect(0, -h * 0.018, h * 0.1, h * 0.036);
+        context.restore();
+      }
+
+      context.fillStyle = 'rgba(255,255,255,.78)';
+      context.fillRect(-w * 0.44, -h * 0.72, w * 0.88, Math.max(7, h * 0.1));
+      context.fillStyle = '#ef5a42';
+      context.fillRect(-w * 0.44, -h * 0.72, w * 0.88 * clamp(enemy.health / enemy.maxHealth, 0, 1), Math.max(7, h * 0.1));
+    }
+
+    if (enemy.hitFlash > 0 && !this.reduceFlash) {
+      context.globalCompositeOperation = 'screen';
+      context.globalAlpha = clamp(enemy.hitFlash * 8, 0, 0.8);
+      context.fillStyle = '#ffffff';
+      context.beginPath();
+      context.ellipse(0, 0, w * 0.65, h * 0.65, 0, 0, Math.PI * 2);
+      context.fill();
+    }
+    context.restore();
+  },
+
+  drawPlayerBullet(context, bullet) {
+    context.save();
+    context.translate(bullet.x, bullet.y);
+    context.fillStyle = bullet.color;
+    context.strokeStyle = bullet.color;
+    context.lineWidth = Math.max(1.2, bullet.radius * 0.45);
+    if (bullet.kind === 'precision') {
+      context.fillRect(-bullet.radius * 0.55, -bullet.radius * 2.2, bullet.radius * 1.1, bullet.radius * 4.4);
+      context.globalAlpha = 0.22;
+      context.fillRect(-bullet.radius * 0.35, 0, bullet.radius * 0.7, 22);
+    } else if (bullet.kind === 'spread') {
+      context.rotate(Math.atan2(bullet.vy, bullet.vx) + Math.PI / 2);
+      context.beginPath();
+      context.moveTo(0, -bullet.radius * 1.8);
+      context.lineTo(bullet.radius, bullet.radius * 1.1);
+      context.lineTo(0, bullet.radius * 0.55);
+      context.lineTo(-bullet.radius, bullet.radius * 1.1);
+      context.closePath();
+      context.fill();
+    } else if (bullet.kind === 'root') {
+      context.beginPath();
+      context.arc(0, 0, bullet.radius, 0, Math.PI * 2);
+      context.stroke();
+      context.beginPath();
+      context.moveTo(0, bullet.radius);
+      context.lineTo(-bullet.radius * 0.8, bullet.radius * 2);
+      context.moveTo(0, bullet.radius);
+      context.lineTo(bullet.radius * 0.8, bullet.radius * 2);
+      context.stroke();
+    } else {
+      context.beginPath();
+      for (let index = 0; index < 10; index += 1) {
+        const angle = index / 10 * Math.PI * 2;
+        const radius = index % 2 ? bullet.radius * 0.8 : bullet.radius * 1.5;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+        if (!index) context.moveTo(x, y); else context.lineTo(x, y);
+      }
+      context.closePath();
+      context.fill();
+    }
+    context.restore();
+  },
+
+  drawEnemyBullet(context, bullet) {
+    context.save();
+    context.translate(bullet.x, bullet.y);
+    context.fillStyle = bullet.color;
+    context.strokeStyle = bullet.color;
+    if (bullet.kind === 'shard') {
+      context.beginPath();
+      context.moveTo(0, bullet.radius * 1.7);
+      context.lineTo(bullet.radius, -bullet.radius);
+      context.lineTo(-bullet.radius, -bullet.radius * 0.4);
+      context.closePath();
+      context.fill();
+    } else if (bullet.kind === 'percent') {
+      context.font = `900 ${Math.max(8, bullet.radius * 3)}px Impact, sans-serif`;
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText('%', 0, 0);
+    } else if (bullet.kind === 'invoice') {
+      context.fillRect(-bullet.radius * 0.75, -bullet.radius, bullet.radius * 1.5, bullet.radius * 2);
+      context.fillStyle = '#3a3c36';
+      context.fillRect(-bullet.radius * 0.45, -bullet.radius * 0.45, bullet.radius * 0.9, bullet.radius * 0.18);
+      context.fillRect(-bullet.radius * 0.45, 0, bullet.radius * 0.65, bullet.radius * 0.16);
+    } else if (bullet.kind === 'stamp') {
+      context.strokeStyle = bullet.color;
+      context.lineWidth = 2;
+      context.strokeRect(-bullet.radius, -bullet.radius, bullet.radius * 2, bullet.radius * 2);
+      context.fillRect(-bullet.radius * 0.
