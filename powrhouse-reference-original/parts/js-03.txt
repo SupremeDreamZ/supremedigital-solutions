@@ -381,11 +381,11 @@ function initEnding() {
   });
 }
 
-
 async function hydratePosterFromVault() {
   const poster = $('#posterSource');
   const vault = $('#posterVault');
-  if (!poster || !vault) return;
+  if (!poster || !vault) return false;
+
   const started = performance.now();
   const findPoster = () => {
     try {
@@ -393,34 +393,32 @@ async function hydratePosterFromVault() {
       if (!doc) return '';
       const preferred = doc.querySelector('#posterSource, #posterImage, img.poster-image');
       if (preferred?.src?.startsWith('data:image/')) return preferred.src;
-      const candidates = [...doc.images];
-      const exact = candidates.find((img) => img.naturalWidth === 864 && img.naturalHeight === 1536 && img.src.startsWith('data:image/'));
+      const exact = [...doc.images].find((image) => image.naturalWidth === 864 && image.naturalHeight === 1536 && image.src.startsWith('data:image/'));
       if (exact) return exact.src;
       const sourceHtml = doc.documentElement?.outerHTML || '';
-      const match = sourceHtml.match(/data:image\/(?:jpeg|jpg|webp|png);base64,[A-Za-z0-9+/=]+/);
-      return match?.[0] || '';
+      return sourceHtml.match(/data:image\/(?:jpeg|jpg|webp|png);base64,[A-Za-z0-9+/=]+/)?.[0] || '';
     } catch (error) {
       return '';
     }
   };
+
   let source = findPoster();
   while (!source && performance.now() - started < 30000) {
     await new Promise((resolve) => window.setTimeout(resolve, 120));
     source = findPoster();
   }
-  if (!source) throw new Error('The exact poster artwork could not be recovered from the protected legacy payload.');
+  if (!source) return false;
+
   poster.src = source;
   await poster.decode().catch(() => {});
   $$('[data-poster-copy]').forEach((image) => { image.src = source; });
   vault.remove();
+  return true;
 }
 
-async function init() {
-  await hydratePosterFromVault();
-  const posterSource = $('#posterSource');
-  if (posterSource) {
-    $$('[data-poster-copy]').forEach((image) => { image.src = posterSource.src; });
-  }
+function initCoreExperience() {
+  // Bind the gate before any poster recovery or heavy game setup. A visitor
+  // should never have to wait for a hidden payload before the 21+ button works.
   initAgeGate();
   initPosterInteractions();
   initPageProgress();
@@ -431,8 +429,9 @@ async function init() {
   if (bestReadout) bestReadout.textContent = String(Number(safeStorage.get('powrhouse-best', '0') || 0)).padStart(6, '0');
 }
 
-init().catch((error) => {
-  document.body.classList.add('boot-error');
-  document.body.style.visibility = 'visible';
-  showToast(error.message, 8000);
+initCoreExperience();
+hydratePosterFromVault().then((loaded) => {
+  if (!loaded) showToast('POSTER ART IS STILL LOADING. THE INTERACTIONS REMAIN AVAILABLE.', 5000);
+}).catch(() => {
+  showToast('POSTER ART COULD NOT LOAD. THE INTERACTIONS REMAIN AVAILABLE.', 5000);
 });
