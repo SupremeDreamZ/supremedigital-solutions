@@ -1,4 +1,5 @@
-({ x: enemy.x, y: enemy.y, vx: Math.sin(angle) * 190, vy: Math.cos(angle) * 235, radius: 4, color: '#f15cae', kind: 'percent' });
+
+            this.enemyBullets.push({ x: enemy.x, y: enemy.y, vx: Math.sin(angle) * 190, vy: Math.cos(angle) * 235, radius: 4, color: '#f15cae', kind: 'percent' });
           });
         } else if (enemy.type === 'boss') {
           for (let index = -2; index <= 2; index += 1) {
@@ -436,4 +437,4 @@
       context.strokeStyle = bullet.color;
       context.lineWidth = 2;
       context.strokeRect(-bullet.radius, -bullet.radius, bullet.radius * 2, bullet.radius * 2);
-      context.fillRect(-bullet.radius * 0.
+      context.fillRect(-bullet.radius * 0.32, -bullet.radius * 0.32, b
