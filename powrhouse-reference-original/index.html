@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#070806" />
+  <meta name="description" content="PowrHouse interactive cultivation showcase. Adults 21+ only." />
+  <title>PowrHouse — Cultivate. Validate. Showcase.</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to experience</a>
+
+  <div id="ageGate" class="age-gate" role="dialog" aria-modal="true" aria-labelledby="ageTitle">
+    <div class="age-card torn-card">
+      <p class="eyebrow">AGE VERIFICATION</p>
+      <div class="logo logo-large" aria-label="PowrHouse">Powr<span>House.</span></div>
+      <h1 id="ageTitle">THIS HOUSE IS 21+.</h1>
+      <p>PowrHouse content concerns regulated cannabis products and cultivation. Confirm that you are at least 21 years old to enter.</p>
+      <div class="age-actions">
+        <button id="enterSite" class="btn btn-lime">I’M 21+ <span aria-hidden="true">→</span></button>
+        <button id="leaveSite" class="btn btn-ghost">LEAVE</button>
+      </div>
+      <small>For adults 21 years of age and older. Keep out of reach of children and pets.</small>
+    </div>
+  </div>
+
+  <div class="paper-noise" aria-hidden="true"></div>
+  <div class="scroll-thread" aria-hidden="true"><span id="scrollThreadFill"></span></div>
+
+  <header class="site-header" id="top">
+    <a class="logo" href="#hero" aria-label="PowrHouse home">Powr<span>House.</span></a>
+    <nav aria-label="Primary navigation">
+      <a href="#method">GROW</a>
+      <a href="#flavors">FLAVORS</a>
+      <a href="#game">PLAY</a>
+    </nav>
+    <div class="header-tools">
+      <button id="soundToggle" class="icon-button" type="button" aria-pressed="false" aria-label="Turn sound on">
+        <span class="sound-icon" aria-hidden="true">◖))</span>
+      </button>
+      <button id="menuToggle" class="icon-button menu-button" type="button" aria-expanded="false" aria-controls="mobileNav" aria-label="Open menu">
+        <span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <nav id="mobileNav" class="mobile-nav" aria-label="Mobile navigation" hidden>
+    <a href="#hero">HOME</a>
+    <a href="#method">GROWN DIFFERENT</a>
+    <a href="#why">WHY POWRHOUSE</a>
+    <a href="#burn">SMOKE DIFFERENT</a>
+    <a href="#flavors">FLAVORS</a>
+    <a href="#find">FIND POWRHOUSE</a>
+    <a href="#game">PLAY THE FINALE</a>
+  </nav>
+
+  <main id="main">
+    <section id="hero" class="section hero-section" data-section="hero">
+      <div class="hero-copy reveal">
+        <p class="kicker">POWRHOUSE FLOWER // SACRAMENTO</p>
+        <h1 class="display-stack">
+          <span>CULTIVATE.</span>
+          <span>VALIDATE.</span>
+          <span>SHOWCASE.</span>
+        </h1>
+        <p class="scribble">LOUD FLOWER.<br />WEIRDLY SERIOUS.</p>
+        <div class="hero-actions">
+          <a class="btn btn-lime" href="#flavors">EXPLORE FLOWER <span aria-hidden="true">→</span></a>
+          <button id="inspectPlant" class="btn btn-ghost" type="button">INSPECT THE COLA</button>
+        </div>
+      </div>
+
+      <div class="hero-stage reveal" aria-label="Procedural paper-cut cannabis cola illustration">
+        <div class="smoke smoke-a" aria-hidden="true"></div>
+        <div class="smoke smoke-b" aria-hidden="true"></div>
+        <svg id="heroPlant" class="hero-plant" viewBox="0 0 620 760" role="img" aria-labelledby="plantTitle plantDesc">
+          <title id="plantTitle">Layered paper-cut cannabis cola</title>
+          <desc id="plantDesc">An original procedural illustration inspired by the supplied hand-cut collage reference.</desc>
+          <defs>
+            <filter id="roughEdge">
+              <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="3" seed="11" result="noise" />
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+            <filter id="plantShadow" x="-30%" y="-30%" width="160%" height="180%">
+              <feDropShadow dx="0" dy="18" stdDeviation="14" flood-color="#000" flood-opacity=".72" />
+            </filter>
+            <linearGradient id="budGreen" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#b9c98c" />
+              <stop offset=".55" stop-color="#7d9561" />
+              <stop offset="1" stop-color="#4d6140" />
+            </linearGradient>
+            <linearGradient id="budPurple" x1="0" x2="1">
+              <stop offset="0" stop-color="#756781" />
+              <stop offset="1" stop-color="#a89ab0" />
+            </linearGradient>
+            <path id="leafShape" d="M0 0 C-18 -34 -10 -64 0 -98 C10 -64 18 -34 0 0 Z" />
+          </defs>
+          <g id="plantShadowGroup" filter="url(#plantShadow)">
+            <path class="stem" d="M316 700 C300 570 330 430 308 292 C300 220 324 132 314 60" />
+            <g id="leafLayerBack"></g>
+            <g id="budLayer"></g>
+            <g id="pistilLayer"></g>
+            <g id="leafLayerFront"></g>
+          </g>
+        </svg>
+        <div class="plant-label note-card">NOT YOUR<br />CORPORATE<br />WEED. <span aria-hidden="true">☺</span></div>
+        <div id="plantInspector" class="plant-inspector" hidden>
+          <button type="button" data-focus="genetics">01 GENETICS</button>
+          <button type="button" data-focus="structure">02 STRUCTURE</button>
+          <button type="button" data-focus="aroma">03 AROMA</button>
+          <button type="button" data-focus="burn">04 BURN</button>
+        </div>
+      </div>
+
+      <div class="scroll-cue" aria-hidden="true">SCROLL TO GROW <span>↓</span></div>
+    </section>
+
+    <div class="torn-divider" aria-hidden="true"></div>
+
+    <section id="method" class="section method-section" data-section="method">
+      <div class="grow-room reveal">
+        <div class="grow-ceiling">
+          <span class="lamp"></span><span class="lamp"></span><span class="lamp"></span>
+        </div>
+        <div id="growRows" class="grow-rows" aria-label="Animated grow-room illustration"></div>
+        <div class="fan" aria-hidden="true"><span></span></div>
+        <div class="grower cartoon" aria-hidden="true">
+          <div class="beanie"></div><div class="face"><i></i><i></i><b></b></div><div class="body"></div><div class="watering-can"></div>
+        </div>
+        <div class="room-note note-card">NO SHORTCUTS.<br />JUST PATIENCE.</div>
+      </div>
+
+      <div class="method-copy reveal">
+        <p class="kicker">THE SYSTEM</p>
+        <h2>GROWN DIFFERENT.</h2>
+        <p class="scribble">SYNTHETICS + ORGANICS.<br />DATA + SENSES.</p>
+        <p>PowrHouse describes its cultivation approach as <strong>Synganic</strong>: precision mineral nutrition paired with biological inputs and measured crop steering. The flower is validated for aroma, texture, smokeability, burn and post-harvest stability, not just bag appeal.</p>
+        <div class="method-grid">
+          <article class="method-card" data-principle="genetics">
+            <div class="method-icon dna-icon" aria-hidden="true">✣</div>
+            <h3>CURATED GENETICS</h3>
+            <p>Cultivars selected for performance, structure and flavor expression.</p>
+          </article>
+          <article class="method-card" data-principle="inputs">
+            <div class="method-icon water-icon" aria-hidden="true">◒</div>
+            <h3>CLEAN INPUTS</h3>
+            <p>Biological and mineral inputs are used with repeatable irrigation targets.</p>
+          </article>
+          <article class="method-card" data-principle="smallbatch">
+            <div class="method-icon jar-icon" aria-hidden="true">▣</div>
+            <h3>VALIDATED BATCHES</h3>
+            <p>Moisture, water activity, grind behavior and combustion are checked before release.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <div class="torn-divider reverse" aria-hidden="true"></div>
+
+    <section id="why" class="section why-section" data-section="why">
+      <header class="section-heading reveal">
+        <p class="kicker">THE HOUSE RULES</p>
+        <h2>WHY POWRHOUSE?</h2>
+        <p class="scribble">IT’S NOT ROCKET SCIENCE.<br />IT’S HARDER: CONSISTENCY.</p>
+      </header>
+      <div class="proof-strip">
+        <article class="proof-card reveal" data-index="01">
+          <div class="proof-illustration magnify" aria-hidden="true"><span></span></div>
+          <h3>GENETICS THAT EARN IT</h3>
+          <p>Each cultivar must prove more than a photogenic first day.</p>
+        </article>
+        <article class="proof-card reveal" data-index="02">
+          <div class="proof-illustration clipboard" aria-hidden="true"><span></span></div>
+          <h3>TESTED PAST COMPLIANCE</h3>
+          <p>Internal benchmarks track the way flower stores, grinds, smells and burns.</p>
+        </article>
+        <article class="proof-card reveal" data-index="03">
+          <div class="proof-illustration mascot" aria-hidden="true"><span>✌</span></div>
+          <h3>CONSISTENCY WITH A PULSE</h3>
+          <p>Repeatability without sanding away the personality of the cultivar.</p>
+        </article>
+        <article class="proof-card reveal" data-index="04">
+          <div class="proof-illustration flame" aria-hidden="true">♨</div>
+          <h3>SMALL TEAM. BIG CARE.</h3>
+          <p>Built by growers, operators and collaborators close to the plant.</p>
+        </article>
+        <article class="proof-card reveal" data-index="05">
+          <div class="proof-illustration handshake" aria-hidden="true">⌁</div>
+          <h3>THE CoNNect COMMUNITY</h3>
+          <p>Retail feedback and consumer response feed the next round of refinement.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="burn" class="section burn-section" data-section="burn">
+      <div class="smoker-card reveal">
+        <div class="speech-bubble">SMOOTH IS AN<br />UNDER-STATEMENT.</div>
+        <div class="smoker cartoon" aria-hidden="true">
+          <div class="beanie"></div><div class="face"><i></i><i></i><b></b></div><div class="body"></div><div class="joint"><span></span></div>
+        </div>
+      </div>
+      <div class="burn-copy reveal">
+        <p class="kicker">THE COMBUSTION CHECK</p>
+        <h2>SMOKE DIFFERENT.</h2>
+        <p class="scribble">CLEAN BURN. CLEAR SIGNAL.</p>
+        <p>Burn quality is one of the final validation checkpoints. The goal is steady combustion, expressive flavor and a clean finish, not theater built around a lab number.</p>
+        <button id="burnTest" class="btn btn-lime" type="button">RUN THE WHITE-ASH TEST</button>
+      </div>
+      <div class="burn-lab reveal" aria-label="Interactive burn test">
+        <div class="joint-display"><span class="ember"></span><span class="ash"></span><span class="smoke-trail"></span></div>
+        <div class="ash-dish"><span id="ashPile"></span></div>
+        <div class="burn-meter">
+          <span>COMBUSTION</span>
+          <div class="meter-track"><i id="burnMeterFill"></i></div>
+          <output id="burnStatus">READY</output>
+        </div>
+      </div>
+    </section>
+
+    <div class="torn-divider" aria-hidden="true"></div>
+
+    <section id="flavors" class="section flavor-section" data-section="flavors">
+      <header class="flavor-heading reveal">
+        <div>
+          <p class="kicker">RETAIL FLAVORS</p>
+          <h2>FLAVOR THAT <em>HITS.</em></h2>
+          <p class="scribble">DRIVE THE EXPERIENCE THROUGH<br />AROMA &amp; FLAVOR. NOT THC %.</p>
+        </div>
+        <div class="flavor-controls" role="group" aria-label="Filter cultivars">
+          <button class="chip active" data-filter="all" type="button">ALL</button>
+          <button class="chip" data-filter="fruit" type="button">FRUIT</button>
+          <button class="chip" data-filter="dessert" type="button">DESSERT</button>
+          <button class="chip" data-filter="candy" type="button">CANDY</button>
+        </div>
+      </header>
+      <div id="strainRail" class="strain-rail" aria-live="polite"></div>
+      <p class="experience-note reveal">Experience guidance is based on aroma and flavor expression, not a promise of effects. Everyone’s body responds differently. Use your senses and consume responsibly.</p>
+    </section>
+
+    <section id="find" class="section find-section" data-section="find">
+      <div class="find-copy reveal">
+        <p class="kicker">OUT IN THE WILD</p>
+        <h2>FIND POWRHOUSE.</h2>
+        <p class="scribble">QUALITY SHOPS.<br />REAL PEOPLE.</p>
+        <p>This concept does not process cannabis transactions. Use licensed local retailers and verify availability directly.</p>
+        <a class="btn btn-lime" href="https://www.powr.house/" rel="noreferrer" target="_blank">VISIT POWR.HOUSE <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="storefront reveal" aria-hidden="true">
+        <div class="moon"></div><div class="stars"></div>
+        <div class="building"><div class="awning"></div><div class="door">OPEN</div><div class="sign">GOOD WEED<br /><small>SOLD HERE</small></div></div>
+        <div class="sidewalk-mascot"><span>COME<br />GET<br />LOUD</span></div>
+      </div>
+      <div class="map-card reveal" aria-label="Decorative California map panel">
+        <svg viewBox="0 0 440 300" role="img" aria-label="Stylized map with quality retailer markers">
+          <path d="M28 65 C90 35 170 65 220 38 C282 5 362 28 410 86 L389 238 C320 277 238 245 179 277 C122 306 48 264 29 211 Z" fill="#d8cbb5" stroke="#1d211a" stroke-width="7" />
+          <g stroke="#827b6d" stroke-width="3" opacity=".68">
+            <path d="M55 90 L386 210"/><path d="M36 180 L350 44"/><path d="M120 51 L165 270"/><path d="M272 35 L250 261"/>
+          </g>
+          <g class="map-pin" transform="translate(160 100)"><circle r="22"/><path d="M0 38 L-11 13 L11 13 Z"/><circle r="7" class="pin-hole"/></g>
+          <g class="map-pin" transform="translate(298 166)"><circle r="22"/><path d="M0 38 L-11 13 L11 13 Z"/><circle r="7" class="pin-hole"/></g>
+          <g class="map-pin" transform="translate(232 225)"><circle r="22"/><path d="M0 38 L-11 13 L11 13 Z"/><circle r="7" class="pin-hole"/></g>
+        </svg>
+        <div class="map-stamp">QUALITY SHOPS.<br />REAL EASY.</div>
+      </div>
+    </section>
+
+    <section id="validation" class="section validation-section" data-section="validation">
+      <div class="validation-copy reveal">
+        <p class="kicker">YOU’VE BEEN LEARNING THE LOADOUT</p>
+        <h2>VALIDATE THE FLOWER.</h2>
+        <p>Lock the four checkpoints below. Each one becomes a combat system in the finale. The website has been quietly training you. Sneaky little horticultural machine.</p>
+      </div>
+      <div id="validationGrid" class="validation-grid">
+        <button class="validation-token reveal" data-token="genetics" type="button"><span>01</span><strong>GENETICS</strong><small>Precision burst</small></button>
+        <button class="validation-token reveal" data-token="inputs" type="button"><span>02</span><strong>CLEAN INPUTS</strong><small>Purifying spread</small></button>
+        <button class="validation-token reveal" data-token="structure" type="button"><span>03</span><strong>STRUCTURE</strong><small>Root shield</small></button>
+        <button class="validation-token reveal" data-token="burn" type="button"><span>04</span><strong>WHITE ASH</strong><small>Charged purge</small></button>
+      </div>
+      <div class="validation-status reveal"><span id="validationCount">0 / 4 LOCKED</span><i><b id="validationBar"></b></i></div>
+    </section>
+
+    <section id="game" class="section game-section" data-section="game">
+      <div class="game-intro" id="gameIntro">
+        <p class="kicker">ARCADE FINALE // QUALITY CONTROL EMERGENCY</p>
+        <h2>CORPORATE CROP INVASION</h2>
+        <p>The house is under attack by gray, flavorless industrial weed. Hold the validation line, protect the garden and charge the White Ash Protocol.</p>
+        <div class="game-controls-copy">
+          <span><b>MOVE</b> WASD / ARROWS / DRAG</span>
+          <span><b>FIRE</b> SPACE / AUTO-FIRE</span>
+          <span><b>SWITCH</b> Q / E</span>
+          <span><b>WHITE ASH</b> C / BUTTON</span>
+        </div>
+        <div class="game-options">
+          <label><input id="reduceShake" type="checkbox" /> REDUCE SHAKE</label>
+          <label><input id="reduceFlashes" type="checkbox" /> REDUCE FLASHES</label>
+        </div>
+        <button id="startGame" class="btn btn-lime btn-large" type="button">BEGIN VALIDATION <span aria-hidden="true">→</span></button>
+        <button id="skipGame" class="btn btn-ghost" type="button">VIEW ENDING WITHOUT PLAYING</button>
+      </div>
+
+      <div id="gameShell" class="game-shell" hidden>
+        <canvas id="gameCanvas" aria-label="Corporate Crop Invasion arcade game"></canvas>
+        <div class="game-hud" aria-live="polite">
+          <div><small>SCORE</small><strong id="scoreValue">000000</strong></div>
+          <div><small>COMBO</small><strong id="comboValue">x1</strong></div>
+          <div><small>WAVE</small><strong id="waveValue">1 / 5</strong></div>
+          <div class="health-hud"><small>HOUSE</small><i><b id="healthFill"></b></i></div>
+          <div class="ash-hud"><small>WHITE ASH</small><i><b id="ashFill"></b></i></div>
+          <button id="pauseGame" type="button" aria-label="Pause game">Ⅱ</button>
+          <button id="muteGame" type="button" aria-label="Mute game">◖))</button>
+        </div>
+        <div class="weapon-readout"><span id="weaponName">GENETICS // PRECISION</span><small>Q / E TO SWITCH</small></div>
+        <div class="mobile-controls" aria-hidden="true">
+          <div id="moveZone" class="move-zone"><span>DRAG TO MOVE</span></div>
+          <div class="action-zone">
+            <button id="mobileSwitch" type="button">SWITCH</button>
+            <button id="mobileAsh" type="button">WHITE ASH</button>
+          </div>
+        </div>
+        <div id="gameMessage" class="game-message" hidden></div>
+      </div>
+    </section>
+
+    <section id="ending" class="section ending-section" data-section="ending" hidden>
+      <div class="ending-art" aria-hidden="true">
+        <div class="ending-bud"></div>
+        <div class="ending-smoke"></div>
+      </div>
+      <div class="ending-copy reveal">
+        <p class="kicker">VALIDATION COMPLETE</p>
+        <h2>GROW LOUD.<br />PROVE EVERYTHING.</h2>
+        <p>Good flower is not one number, one photo or one lucky batch. It is genetics, inputs, structure, post-harvest control and combustion working as one system.</p>
+        <div class="ending-stats"><span>BEST SCORE <b id="bestScore">000000</b></span><span>HOUSE STATUS <b>STILL WEIRD</b></span></div>
+        <a class="btn btn-lime" href="#hero">RUN IT BACK <span aria-hidden="true">↑</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="logo logo-large">Powr<span>House.</span></div>
+    <p>Concept experience built from the supplied visual reference and verified PowrHouse public information. No cannabis transactions occur on this site.</p>
+    <div class="footer-links"><a href="https://www.powr.house/" target="_blank" rel="noreferrer">OFFICIAL SITE ↗</a><a href="#top">BACK TO TOP ↑</a></div>
+    <small>For use only by adults 21 years of age and older. Keep out of reach of children and pets. Please consume responsibly. There may be health risks associated with cannabis consumption.</small>
+  </footer>
+
+  <noscript><div class="noscript">This interactive experience requires JavaScript. The plants refuse to animate through sheer optimism.</div></noscript>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
