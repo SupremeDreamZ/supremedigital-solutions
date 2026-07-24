@@ -1,0 +1,489 @@
+const $ = (selector, scope = document) => scope.querySelector(selector);
+const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const random = (min, max) => min + Math.random() * (max - min);
+
+const posterHeight = 1536;
+const safeStorage = {
+  get(key, fallback = null) {
+    try {
+      const value = window.localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  },
+  set(key, value) {
+    try {
+      window.localStorage.setItem(key, value);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+};
+function readStoredArray(key) {
+  try {
+    const value = JSON.parse(safeStorage.get(key, '[]'));
+    return Array.isArray(value) ? value : [];
+  } catch (error) {
+    return [];
+  }
+}
+const validation = new Set(readStoredArray('powrhouse-validation'));
+const strainData = {
+  'Purple Splash': {
+    description: 'The supplied poster presents Purple Splash as an Indica card. No aroma or effect claims are added beyond the artwork.',
+    tags: ['INDICA', 'POSTER CARD'],
+    accent: '#705f7a',
+    accent: '#776182'
+  },
+  'Blueberry Pancakes': {
+    description: 'The supplied poster presents Blueberry Pancakes as a Hybrid card. The interactive layer does not invent terpene or effect claims.',
+    tags: ['HYBRID', 'POSTER CARD'],
+    accent: '#bd6537',
+    accent: '#4f7288'
+  },
+  'Loud Zkittles': {
+    description: 'The supplied poster presents Loud Zkittles as a Hybrid card. Any additional flavor interpretation belongs to the viewer, not fake copy.',
+    tags: ['HYBRID', 'POSTER CARD']
+  },
+  'Gelato Cake': {
+    description: 'The supplied poster presents Gelato Cake as an Indica card. No unverified tasting notes or potency claims are attached.',
+    tags: ['INDICA', 'POSTER CARD']
+  },
+  'Durban Dynamite': {
+    description: 'The supplied poster presents Durban Dynamite as a Sativa card. The site preserves that visible classification and stops there.',
+    tags: ['SATIVA', 'POSTER CARD'],
+    accent: '#67843e'
+  }
+};
+
+let toastTimer = 0;
+let audioContext = null;
+let masterGain = null;
+let soundEnabled = false;
+
+function haptic(pattern = 12) {
+  try {
+    if ('vibrate' in navigator) navigator.vibrate(pattern);
+  } catch (error) {
+    // Haptics are optional. Browsers, in their wisdom, may ignore them.
+  }
+}
+
+function showToast(message, duration = 2400) {
+  const toast = $('#toast');
+  if (!toast) return;
+  clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.hidden = false;
+  toastTimer = window.setTimeout(() => {
+    toast.hidden = true;
+  }, duration);
+}
+
+function ensureAudio() {
+  if (audioContext) return audioContext;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  audioContext = new AudioContextClass();
+  masterGain = audioContext.createGain();
+  masterGain.gain.value = 0.065;
+  masterGain.connect(audioContext.destination);
+  return audioContext;
+}
+
+function tone(frequency = 440, duration = 0.07, type = 'triangle', endFrequency = null, gain = 0.18) {
+  if (!soundEnabled) return;
+  const context = ensureAudio();
+  if (!context || !masterGain) return;
+  if (context.state === 'suspended') context.resume();
+  const oscillator = context.createOscillator();
+  const envelope = context.createGain();
+  const now = context.currentTime;
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, now);
+  if (endFrequency) oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, endFrequency), now + duration);
+  envelope.gain.setValueAtTime(0.0001, now);
+  envelope.gain.exponentialRampToValueAtTime(gain, now + 0.008);
+  envelope.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  oscillator.connect(envelope);
+  envelope.connect(masterGain);
+  oscillator.start(now);
+  oscillator.stop(now + duration + 0.02);
+}
+
+function noise(duration = 0.05, gain = 0.05, highpass = 800) {
+  if (!soundEnabled) return;
+  const context = ensureAudio();
+  if (!context || !masterGain) return;
+  const length = Math.max(1, Math.floor(context.sampleRate * duration));
+  const buffer = context.createBuffer(1, length, context.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let index = 0; index < length; index += 1) {
+    data[index] = (Math.random() * 2 - 1) * (1 - index / length);
+  }
+  const source = context.createBufferSource();
+  const filter = context.createBiquadFilter();
+  const envelope = context.createGain();
+  source.buffer = buffer;
+  filter.type = 'highpass';
+  filter.frequency.value = highpass;
+  envelope.gain.value = gain;
+  source.connect(filter);
+  filter.connect(envelope);
+  envelope.connect(masterGain);
+  source.start();
+}
+
+function updateValidationUI() {
+  const stamp = $('#validationStamp');
+  const count = $('#validationStampCount');
+  if (count) count.textContent = `${validation.size}/4`;
+  if (stamp) stamp.hidden = validation.size === 0;
+  $$('.loadout article').forEach((card) => {
+    const unlocked = validation.has(card.dataset.module);
+    card.classList.toggle('unlocked', unlocked);
+    card.setAttribute('aria-pressed', String(unlocked));
+  });
+  $$('.token-hotspot').forEach((button) => {
+    button.setAttribute('aria-pressed', String(validation.has(button.dataset.token)));
+  });
+  safeStorage.set('powrhouse-validation', JSON.stringify([...validation]));
+}
+
+function scrollPosterTo(pixelY) {
+  const frame = $('#posterFrame');
+  if (!frame) return;
+  const rect = frame.getBoundingClientRect();
+  const top = window.scrollY + rect.top;
+  const target = top + (pixelY / posterHeight) * rect.height;
+  window.scrollTo({ top: target, behavior: 'smooth' });
+}
+
+function initAgeGate() {
+  const gate = $('#ageGate');
+  if (!gate) return;
+  const enter = $('#ageEnter');
+  const leave = $('#ageLeave');
+  const background = [document.querySelector('main'), document.querySelector('footer'), $('#posterMenu'), $('#strainDialog'), $('#toast')].filter(Boolean);
+  const setOpen = (open) => {
+    gate.hidden = !open;
+    document.body.classList.toggle('locked', open);
+    background.forEach((element) => { element.inert = open; });
+    if (open) requestAnimationFrame(() => enter?.focus());
+  };
+
+  const verified = safeStorage.get('powrhouse-21') === 'yes';
+  setOpen(!verified);
+
+  gate.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab') return;
+    const controls = [enter, leave].filter(Boolean);
+    if (!controls.length) return;
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  enter?.addEventListener('click', () => {
+    safeStorage.set('powrhouse-21', 'yes');
+    setOpen(false);
+    document.body.classList.remove('hotspot-hover-armed');
+    soundEnabled = true;
+    ensureAudio()?.resume();
+    tone(260, 0.12, 'triangle', 520, 0.16);
+    requestAnimationFrame(() => $('#poster')?.focus({ preventScroll: true }));
+  });
+
+  leave?.addEventListener('click', () => {
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = 'https://www.powr.house/';
+  });
+}
+
+function initPosterInteractions() {
+  const menu = $('#posterMenu');
+  const dialog = $('#strainDialog');
+  const menuClose = $('#closeMenu');
+  let menuReturnFocus = null;
+  const menuBackground = [document.querySelector('main'), document.querySelector('footer'), dialog, $('#toast')].filter(Boolean);
+  const openMenu = (trigger) => {
+    if (!menu) return;
+    menuReturnFocus = trigger || document.activeElement;
+    menu.hidden = false;
+    menuBackground.forEach((element) => { element.inert = true; });
+    requestAnimationFrame(() => menuClose?.focus());
+  };
+  const closeMenu = () => {
+    if (!menu || menu.hidden) return;
+    menu.hidden = true;
+    menuBackground.forEach((element) => { element.inert = false; });
+    if (menuReturnFocus instanceof HTMLElement) menuReturnFocus.focus({ preventScroll: true });
+  };
+  menu?.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeMenu();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const controls = $$('button:not([disabled]),a[href]', menu).filter((element) => !element.hidden);
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  $$('[data-action]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const action = button.dataset.action;
+      if (action === 'cart') {
+        showToast('CONCEPT EXPERIENCE ONLY. NO CANNABIS TRANSACTIONS HAPPEN HERE.');
+        tone(220, 0.06, 'square', 170, 0.08);
+      }
+      if (action === 'menu') openMenu(button);
+      if (action === 'shop') scrollPosterTo(1120);
+      if (action === 'plant') {
+        showToast('HERO COLA // LAYERED FLOWER, PURPLE STRUCTURE, ORANGE PISTILS.');
+        tone(310, 0.08, 'triangle', 470, 0.1);
+      }
+      if (action === 'grow') {
+        showToast('GROW ROOM // LIVING SOIL, CLEAN INPUTS, SMALL-BATCH ATTENTION.');
+        tone(280, 0.08, 'triangle', 380, 0.1);
+      }
+      if (action === 'retailers') {
+        window.open('https://www.powr.house/', '_blank', 'noopener,noreferrer');
+      }
+    });
+  });
+
+  $$('.token-hotspot').forEach((button) => {
+    button.addEventListener('click', () => {
+      const token = button.dataset.token;
+      if (validation.has(token)) {
+        validation.delete(token);
+        showToast(`${token.toUpperCase()} REMOVED FROM LOADOUT.`);
+        tone(300, 0.06, 'triangle', 220, 0.08);
+      } else {
+        validation.add(token);
+        const label = {
+          genetics: 'GENETICS // PRECISION SHOT',
+          tested: 'TESTED // SPREAD SHOT',
+          consistency: 'CONSISTENCY // ROOT SHIELD',
+          burn: 'WHITE ASH // SCREEN PURGE'
+        }[token];
+        showToast(`${label} UNLOCKED.`);
+        tone(430 + validation.size * 55, 0.09, 'triangle', 720, 0.11);
+      }
+      updateValidationUI();
+      haptic(validation.has(token) ? [12, 24, 18] : 9);
+    });
+  });
+
+  $$('.loadout article').forEach((card) => {
+    const activate = () => {
+      const module = card.dataset.module;
+      const target = Number(card.dataset.scrollPixel || 760);
+      if (validation.has(module)) {
+        showToast(`${module.toUpperCase()} IS ALREADY ARMED.`);
+      } else {
+        showToast(`RETURNING TO THE ${module.toUpperCase()} PROOF CARD.`);
+      }
+      scrollPosterTo(target);
+      tone(280, 0.06, 'triangle', 390, 0.07);
+    };
+    card.addEventListener('click', activate);
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        activate();
+      }
+    });
+  });
+
+  $$('.strain-hotspot').forEach((button) => {
+    button.addEventListener('click', () => {
+      const name = button.dataset.strain;
+      const data = strainData[name];
+      if (!dialog || !data) return;
+      $('#strainName').textContent = name;
+      $('#strainDescription').textContent = data.description;
+      $('#strainTags').innerHTML = data.tags.map((tag) => `<span>${tag}</span>`).join('');
+      dialog.style.setProperty('--strain-accent', data.accent || '#a7d324');
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+      tone(380, 0.06, 'square', 520, 0.07);
+    });
+  });
+
+  $('#closeStrain')?.addEventListener('click', () => dialog?.close());
+  dialog?.addEventListener('click', (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+  window.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    if (dialog?.open) {
+      event.preventDefault();
+      dialog.close();
+      return;
+    }
+    if (menu && !menu.hidden) {
+      event.preventDefault();
+      closeMenu();
+    }
+  });
+
+  menuClose?.addEventListener('click', closeMenu);
+  $$('#posterMenu a').forEach((link) => {
+    link.addEventListener('click', (event) => {
+      closeMenu();
+      if (link.dataset.scrollY) {
+        event.preventDefault();
+        scrollPosterTo(Number(link.dataset.scrollY));
+      }
+    });
+  });
+
+  if (window.matchMedia('(pointer:fine)').matches) {
+    const armHover = () => {
+      if (document.body.classList.contains('locked')) return;
+      document.body.classList.add('hotspot-hover-armed');
+      window.removeEventListener('pointermove', armHover);
+    };
+    window.addEventListener('pointermove', armHover, { passive: true });
+  }
+}
+
+function initPageProgress() {
+  const fill = $('#pageProgressFill');
+  if (!fill) return;
+  const update = () => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const progress = max > 0 ? window.scrollY / max : 0;
+    fill.style.height = `${clamp(progress, 0, 1) * 100}%`;
+  };
+  update();
+  window.addEventListener('scroll', update, { passive: true });
+}
+
+const Game = {
+  canvas: null,
+  context: null,
+  shell: null,
+  posterImage: null,
+  running: false,
+  paused: false,
+  ended: false,
+  raf: 0,
+  lastTime: 0,
+  width: 0,
+  height: 0,
+  dpr: 1,
+  quality: 'high',
+  touch: window.matchMedia('(pointer:coarse)').matches,
+  reduceShake: false,
+  reduceFlash: false,
+  score: 0,
+  combo: 1,
+  comboTimer: 0,
+  wave: 1,
+  waveTimer: 0,
+  waveBanner: '',
+  waveBannerTimer: 0,
+  currentWeapon: 0,
+  ash: 0,
+  shake: 0,
+  keys: Object.create(null),
+  pointer: null,
+  mouseFiring: false,
+  stars: [],
+  bullets: [],
+  enemyBullets: [],
+  enemies: [],
+  particles: [],
+  rings: [],
+  spawnQueue: [],
+  spawnSerial: 0,
+  boss: null,
+  player: { x: 0, y: 0, radius: 22, speed: 360, health: 100, cooldown: 0, shield: 0, flash: 0 },
+  waves: [
+    { name: 'SEED RUN', entries: [['basic', 13]], delay: 0.72 },
+    { name: 'CROSSWIND', entries: [['basic', 9], ['flanker', 8]], delay: 0.65 },
+    { name: 'HARDENING ROOM', entries: [['basic', 7], ['shield', 8], ['flanker', 5]], delay: 0.58 },
+    { name: 'RETAIL PRESSURE', entries: [['basic', 8], ['shield', 6], ['disruptor', 7]], delay: 0.54 },
+    { name: 'CORPORATE CROP DIRECTOR', boss: true }
+  ],
+  weaponNames: ['GENETICS // PRECISION', 'TESTED // SPREAD', 'CONSISTENCY // ROOT SHIELD', 'WHITE ASH // PURGE'],
+
+  init() {
+    this.canvas = $('#gameCanvas');
+    this.shell = $('#gameShell');
+    if (!this.canvas || !this.shell) return;
+    this.context = this.canvas.getContext('2d', { alpha: false });
+    this.posterImage = $('#posterSource');
+    const cores = navigator.hardwareConcurrency || 4;
+    const memory = navigator.deviceMemory || 4;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.quality = (cores <= 2 || memory <= 2) ? 'low' : ((cores <= 4 || window.innerWidth < 500 || reducedMotion) ? 'medium' : 'high');
+    if (reducedMotion) {
+      const shakeOption = $('#reduceShake');
+      const flashOption = $('#reduceFlash');
+      if (shakeOption) shakeOption.checked = true;
+      if (flashOption) flashOption.checked = true;
+    }
+    if (this.touch) {
+      const help = $('.game-help small');
+      if (help) help.textContent = 'DRAG TO MOVE · AUTO-FIRE · SWITCH · WHITE ASH';
+    }
+    this.resize();
+
+    $('#playGame')?.addEventListener('click', () => this.start());
+    $('#viewEnding')?.addEventListener('click', () => showEnding(true));
+    $('#pauseGame')?.addEventListener('click', () => this.togglePause());
+    $('#fullscreenGame')?.addEventListener('click', async () => {
+      try {
+        if (!document.fullscreenElement) await this.shell.requestFullscreen?.();
+        else await document.exitFullscreen?.();
+      } catch (error) {
+        showToast('FULLSCREEN IS NOT AVAILABLE IN THIS BROWSER MODE.');
+      }
+    });
+    $('#muteGame')?.addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      $('#muteGame').textContent = soundEnabled ? '◖))' : '◖×';
+      if (soundEnabled) {
+        ensureAudio()?.resume();
+        tone(420, 0.05, 'triangle', 520, 0.08);
+      }
+    });
+    $('#touchSwitch')?.addEventListener('click', () => this.switchWeapon(1));
+    $('#touchAsh')?.addEventListener('click', () => this.whiteAsh());
+
+    window.addEventListener('resize', () => this.resize());
+    window.addEventListener('orientationchange', () => window.setTimeout(() => this.resize(), 180));
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && this.running && !this.paused) this.pause('PAUSED', 'THE GARDEN STOPS WHEN THE TAB DISAPPEARS.');
+    });
+
+    window.addEventListener('keydown', (event) => {
+      const key = event.key.toLowerCase();
+      if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', ' ', 'q', 'e', 'c', 'p', 'escape'].includes(key)) event.preventDefault();
+      this.keys[key] = true;
+      if (!this.running) return;
+      if (key === 'q') this.switchWeapon(-1);
+      if (key === 'e') this.switchWeapon(1);
+      if (key === 'c') this.whiteAsh();
+      if (key === 'p' || key === 'escape') th
