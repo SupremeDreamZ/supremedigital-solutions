@@ -1,0 +1,431 @@
+32, -bullet.radius * 0.32, bullet.radius * 0.64, bullet.radius * 0.64);
+    } else {
+      context.beginPath();
+      context.arc(0, 0, bullet.radius, 0, Math.PI * 2);
+      context.fill();
+    }
+    context.restore();
+  },
+
+  draw() {
+    const context = this.context;
+    if (!context) return;
+    const offsetX = this.reduceShake ? 0 : random(-this.shake, this.shake);
+    const offsetY = this.reduceShake ? 0 : random(-this.shake, this.shake);
+    const now = performance.now();
+    context.save();
+    context.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    context.fillStyle = '#040604';
+    context.fillRect(0, 0, this.width, this.height);
+    context.translate(offsetX, offsetY);
+
+    const gradient = context.createLinearGradient(0, 0, 0, this.height);
+    gradient.addColorStop(0, '#070b06');
+    gradient.addColorStop(0.52, '#10150c');
+    gradient.addColorStop(1, '#030403');
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, this.width, this.height);
+
+    // The source poster remains physically present in the game world.
+    if (this.posterImage?.complete && this.posterImage.naturalWidth) {
+      // A ghosted hero cola hangs behind the formation like a protective totem.
+      context.save();
+      const plantWidth = Math.min(this.width * (this.touch ? 0.72 : 0.5), 560);
+      const plantHeight = plantWidth * 1.12;
+      const plantX = this.width * 0.5 - plantWidth * 0.5;
+      const plantY = Math.max(72, this.height * 0.075);
+      context.globalAlpha = this.reduceFlash ? 0.055 : 0.09;
+      context.filter = 'saturate(.72) contrast(1.22) brightness(.7)';
+      context.drawImage(this.posterImage, 278, 0, 535, 650, plantX, plantY, plantWidth, plantHeight);
+      context.filter = 'none';
+      context.restore();
+
+      // The grow room from the supplied poster becomes the battlefield floor.
+      context.save();
+      const stripHeight = Math.min(this.height * (this.touch ? 0.34 : 0.39), 360);
+      const stripTop = this.height - stripHeight;
+      context.globalAlpha = 0.48;
+      context.filter = 'saturate(.92) contrast(1.2) brightness(.84)';
+      context.drawImage(this.posterImage, 0, 465, 864, 345, 0, stripTop, this.width, stripHeight);
+      context.filter = 'none';
+      const fade = context.createLinearGradient(0, stripTop, 0, this.height);
+      fade.addColorStop(0, 'rgba(3,5,3,.92)');
+      fade.addColorStop(0.2, 'rgba(3,5,3,.48)');
+      fade.addColorStop(0.66, 'rgba(3,5,3,.08)');
+      fade.addColorStop(1, 'rgba(2,3,2,.42)');
+      context.globalAlpha = 1;
+      context.fillStyle = fade;
+      context.fillRect(0, stripTop, this.width, stripHeight);
+      context.restore();
+
+      // Ragged paper edge where the live game tears out of the poster.
+      context.save();
+      context.fillStyle = 'rgba(78,80,70,.84)';
+      context.beginPath();
+      context.moveTo(0, stripTop + 3);
+      for (let x = 0; x <= this.width; x += 18) {
+        const y = stripTop + 3 + Math.sin(x * 0.071) * 5 + Math.sin(x * 0.017) * 4;
+        context.lineTo(x, y);
+      }
+      context.lineTo(this.width, stripTop + 15);
+      context.lineTo(0, stripTop + 15);
+      context.closePath();
+      context.fill();
+      context.restore();
+    }
+
+    // Uneven vertical paper rails frame the battlefield without eating useful width.
+    context.save();
+    context.fillStyle = 'rgba(214,202,180,.055)';
+    [0, this.width].forEach((edge, side) => {
+      context.beginPath();
+      context.moveTo(edge, 0);
+      for (let y = 0; y <= this.height; y += 28) {
+        const inward = 5 + Math.sin(y * .043 + side) * 4;
+        context.lineTo(side ? edge - inward : edge + inward, y);
+      }
+      context.lineTo(edge, this.height);
+      context.closePath();
+      context.fill();
+    });
+    context.restore();
+
+    // Quiet paper fibers and dust, fixed enough to feel printed instead of digital snow.
+    this.stars.forEach((star, index) => {
+      star.y += star.speed * 0.016;
+      if (star.y > this.height) {
+        star.y = -3;
+        star.x = Math.random() * this.width;
+      }
+      const alpha = clamp(star.size / 3, 0.13, 0.62);
+      context.fillStyle = index % 7 === 0 ? `rgba(167,211,36,${alpha * 0.55})` : `rgba(230,221,204,${alpha})`;
+      context.fillRect(star.x, star.y, star.size * (index % 5 === 0 ? 2.4 : 1), star.size * 0.8);
+    });
+
+    // Torn horizontal staging lanes keep formations readable.
+    for (let lane = 0; lane < 3; lane += 1) {
+      const y = this.height * (0.24 + lane * 0.19);
+      context.fillStyle = lane % 2 ? 'rgba(230,221,204,.025)' : 'rgba(167,211,36,.025)';
+      context.beginPath();
+      context.moveTo(0, y - 9);
+      for (let x = 0; x <= this.width; x += 34) {
+        context.lineTo(x, y - 9 + Math.sin(x * 0.05 + lane) * 5);
+      }
+      context.lineTo(this.width, y + 12);
+      for (let x = this.width; x >= 0; x -= 34) {
+        context.lineTo(x, y + 12 + Math.cos(x * 0.043 + lane) * 4);
+      }
+      context.closePath();
+      context.fill();
+    }
+
+    // Poster doodles drift at the margins and frame the playfield.
+    context.save();
+    context.strokeStyle = 'rgba(167,211,36,.44)';
+    context.fillStyle = 'rgba(167,211,36,.32)';
+    context.lineWidth = 2;
+    const doodles = [
+      [this.width * .08, this.height * .22, -1],
+      [this.width * .92, this.height * .36, 1],
+      [this.width * .12, this.height * .55, 1],
+      [this.width * .87, this.height * .61, -1]
+    ];
+    doodles.forEach(([x, y, direction], index) => {
+      context.save();
+      context.translate(x, y + Math.sin(now / 900 + index) * 8);
+      context.rotate(direction * .18 + Math.sin(now / 1500 + index) * .05);
+      if (index % 2 === 0) {
+        context.beginPath();
+        context.moveTo(0, -11); context.lineTo(11, 10); context.lineTo(-9, 5); context.closePath(); context.fill();
+      } else {
+        for (let ray = 0; ray < 8; ray += 1) {
+          const a = ray / 8 * Math.PI * 2;
+          context.beginPath(); context.moveTo(Math.cos(a) * 6, Math.sin(a) * 6); context.lineTo(Math.cos(a) * 17, Math.sin(a) * 17); context.stroke();
+        }
+      }
+      context.restore();
+    });
+    context.restore();
+
+    // Smoke columns echo the hero poster without hiding projectiles.
+    context.save();
+    context.strokeStyle = 'rgba(180,177,168,.12)';
+    context.lineWidth = clamp(this.width * .014, 7, 18);
+    context.lineCap = 'round';
+    [0.22, 0.76].forEach((position, index) => {
+      context.beginPath();
+      const baseX = this.width * position;
+      context.moveTo(baseX, this.height * .72);
+      context.bezierCurveTo(baseX + (index ? -50 : 45), this.height * .58, baseX + (index ? 55 : -45), this.height * .44, baseX + Math.sin(now / 1200 + index) * 22, this.height * .17);
+      context.stroke();
+    });
+    context.restore();
+
+    if (this.player.shield > 0) {
+      context.strokeStyle = `rgba(196,169,221,${0.42 + this.player.shield * 0.2})`;
+      context.lineWidth = 4;
+      context.setLineDash([7, 5]);
+      context.beginPath();
+      context.arc(this.player.x, this.player.y, this.player.radius + 14, 0, Math.PI * 2);
+      context.stroke();
+      context.setLineDash([]);
+    }
+
+    this.bullets.forEach((bullet) => this.drawPlayerBullet(context, bullet));
+    this.enemyBullets.forEach((bullet) => this.drawEnemyBullet(context, bullet));
+    this.enemies.forEach((enemy) => this.drawEnemy(context, enemy));
+    this.drawPlantPlayer(context, this.player.x, this.player.y, this.player.radius);
+
+    if (this.player.flash > 0 && !this.reduceFlash) {
+      context.fillStyle = `rgba(255,95,65,${this.player.flash * 1.8})`;
+      context.beginPath();
+      context.arc(this.player.x, this.player.y, this.player.radius + 18, 0, Math.PI * 2);
+      context.fill();
+    }
+
+    this.rings.forEach((ring) => {
+      const progress = clamp(ring.age / ring.life, 0, 1);
+      const radius = ring.start + (ring.end - ring.start) * (1 - Math.pow(1 - progress, 2));
+      context.save();
+      context.globalAlpha = (1 - progress) * 0.72;
+      context.strokeStyle = ring.color;
+      context.lineWidth = Math.max(1, ring.width * (1 - progress * 0.65));
+      context.setLineDash([8, 7]);
+      context.beginPath();
+      context.arc(ring.x, ring.y, radius, 0, Math.PI * 2);
+      context.stroke();
+      context.restore();
+    });
+
+    this.particles.forEach((particle) => {
+      const alpha = 1 - particle.age / particle.life;
+      context.globalAlpha = alpha;
+      context.fillStyle = particle.color;
+      context.fillRect(particle.x, particle.y, particle.size, particle.size);
+      context.globalAlpha = 1;
+    });
+
+    if (this.combo >= 4) {
+      context.save();
+      context.strokeStyle = `rgba(199,249,61,${clamp((this.combo - 3) / 10, .12, .5)})`;
+      context.lineWidth = 4 + this.combo * .35;
+      context.strokeRect(5, 5, this.width - 10, this.height - 10);
+      context.restore();
+    }
+
+    if (this.waveBannerTimer > 0) {
+      const bannerWidth = clamp(this.width * .46, 245, 540);
+      const bannerHeight = clamp(this.width * .085, 68, 105);
+      const x = this.width * .5 - bannerWidth * .5;
+      const y = this.height * .23 - bannerHeight * .5;
+      context.save();
+      context.translate(x, y);
+      context.fillStyle = '#d7c9b2';
+      context.beginPath();
+      context.moveTo(5, 4); context.lineTo(bannerWidth - 11, 0); context.lineTo(bannerWidth, 12); context.lineTo(bannerWidth - 5, bannerHeight - 8); context.lineTo(bannerWidth - 25, bannerHeight); context.lineTo(12, bannerHeight - 5); context.lineTo(0, bannerHeight - 18); context.closePath();
+      context.fill();
+      context.fillStyle = '#151712';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.font = `900 ${clamp(this.width * 0.036, 22, 43)}px Impact, sans-serif`;
+      context.fillText(this.waveBanner, bannerWidth * .5, bannerHeight * .43);
+      context.fillStyle = '#587000';
+      context.font = '900 10px Arial, sans-serif';
+      context.fillText('QUALITY CONTROL IS LIVE', bannerWidth * .5, bannerHeight * .74);
+      context.restore();
+    }
+
+    if (validation.has('burn') && this.ash >= 100) {
+      context.strokeStyle = 'rgba(244,241,231,.55)';
+      context.lineWidth = 2.5;
+      context.setLineDash([4, 7]);
+      context.beginPath();
+      context.arc(this.player.x, this.player.y, 48 + Math.sin(now / 120) * 7, 0, Math.PI * 2);
+      context.stroke();
+      context.setLineDash([]);
+    }
+    context.restore();
+  },
+
+  updateHud() {
+    const score = $('#scoreReadout');
+    const combo = $('#comboReadout');
+    const wave = $('#waveReadout');
+    const health = $('#healthBar');
+    const ash = $('#ashBar');
+    const weapon = $('#weaponReadout');
+    if (score) score.textContent = String(Math.floor(this.score)).padStart(6, '0');
+    if (combo) combo.textContent = `x${this.combo}`;
+    if (wave) wave.textContent = `${Math.min(this.wave, 5)}/5`;
+    if (health) health.style.width = `${clamp(this.player.health, 0, 100)}%`;
+    if (ash) ash.style.width = `${clamp(this.ash, 0, 100)}%`;
+    if (weapon) weapon.textContent = this.weaponNames[this.currentWeapon];
+  },
+
+  loop(time) {
+    if (!this.running) return;
+    const dt = Math.min(0.033, (time - this.lastTime) / 1000 || 0.016);
+    this.lastTime = time;
+    if (!this.paused) {
+      this.update(dt);
+      this.draw();
+    }
+    this.raf = requestAnimationFrame((nextTime) => this.loop(nextTime));
+  },
+
+  togglePause() {
+    if (!this.running && !this.paused) return;
+    if (this.paused) {
+      this.paused = false;
+      $('#gameOverlay').hidden = true;
+      this.lastTime = performance.now();
+    } else {
+      this.pause('PAUSED', 'THE HOUSE IS HOLDING POSITION.');
+    }
+  },
+
+  pause(title, text) {
+    this.paused = true;
+    this.overlay(title, text, [
+      { label: 'RESUME', action: 'resume' },
+      { label: 'RETURN TO POSTER', action: 'poster' }
+    ]);
+  },
+
+  finish(won) {
+    this.running = false;
+    this.ended = true;
+    cancelAnimationFrame(this.raf);
+    const best = Math.max(Number(safeStorage.get('powrhouse-best', '0') || 0), Math.floor(this.score));
+    safeStorage.set('powrhouse-best', String(best));
+    const bestReadout = $('#bestScore');
+    if (bestReadout) bestReadout.textContent = String(best).padStart(6, '0');
+    if (won) {
+      tone(320, 0.18, 'triangle', 840, 0.16);
+      this.overlay('HOUSE SECURED', 'THE GARDEN SURVIVED THE CORPORATE CROP INVASION.', [
+        { label: 'RUN IT BACK', action: 'restart' },
+        { label: 'VIEW ENDING', action: 'ending' }
+      ]);
+    } else {
+      this.overlay('QUALITY BREACH', 'THE GRAY CROP GOT THROUGH. REVALIDATE AND TRY AGAIN.', [
+        { label: 'RESTART', action: 'restart' },
+        { label: 'VIEW ENDING', action: 'ending' }
+      ]);
+    }
+  },
+
+  overlay(title, text, buttons) {
+    const overlay = $('#gameOverlay');
+    if (!overlay) return;
+    overlay.hidden = false;
+    overlay.innerHTML = `<div class="game-card" role="dialog" aria-modal="true"><h3>${title}</h3><p>${text}</p>${buttons.map((button, index) => `<button class="paper-button ${index === 0 ? 'lime' : 'dark'}" type="button" data-game-action="${button.action}">${button.label}</button>`).join('')}</div>`;
+    const overlayButtons = $$('[data-game-action]', overlay);
+    overlay.onkeydown = (event) => {
+      if (event.key !== 'Tab' || !overlayButtons.length) return;
+      const first = overlayButtons[0];
+      const last = overlayButtons[overlayButtons.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    requestAnimationFrame(() => overlayButtons[0]?.focus());
+    overlayButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const action = button.dataset.gameAction;
+        if (action === 'resume') {
+          this.paused = false;
+          overlay.hidden = true;
+          this.lastTime = performance.now();
+        }
+        if (action === 'restart') this.start();
+        if (action === 'ending') showEnding(true);
+        if (action === 'poster') {
+          this.running = false;
+          this.paused = false;
+          cancelAnimationFrame(this.raf);
+          overlay.hidden = true;
+          this.shell.hidden = true;
+          document.body.classList.remove('game-active');
+          $('#arcadeIntro').hidden = false;
+          $('#poster').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  }
+};
+
+function showEnding(scroll = false) {
+  Game.running = false;
+  cancelAnimationFrame(Game.raf);
+  if (Game.shell) Game.shell.hidden = true;
+  document.body.classList.remove('game-active');
+  const intro = $('#arcadeIntro');
+  const ending = $('#ending');
+  if (intro) intro.hidden = true;
+  if (ending) {
+    ending.hidden = false;
+    const best = Number(safeStorage.get('powrhouse-best', '0') || 0);
+    const bestReadout = $('#bestScore');
+    if (bestReadout) bestReadout.textContent = String(best).padStart(6, '0');
+    if (scroll) ending.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function initEnding() {
+  $('#restartExperience')?.addEventListener('click', () => {
+    document.body.classList.remove('game-active');
+    const ending = $('#ending');
+    const intro = $('#arcadeIntro');
+    if (ending) ending.hidden = true;
+    if (intro) intro.hidden = false;
+    $('#poster').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+async function hydratePosterFromVault() {
+  const poster = $('#posterSource');
+  const vault = $('#posterVault');
+  if (!poster || !vault) return;
+  const started = performance.now();
+  const findPoster = () => {
+    try {
+      const doc = vault.contentDocument;
+      if (!doc) return '';
+      const preferred = doc.querySelector('#posterSource, #posterImage, img.poster-image');
+      if (preferred?.src?.startsWith('data:image/')) return preferred.src;
+      const candidates = [...doc.images];
+      const exact = candidates.find((img) => img.naturalWidth === 864 && img.naturalHeight === 1536 && img.src.startsWith('data:image/'));
+      if (exact) return exact.src;
+      const html = doc.documentElement?.outerHTML || '';
+      const match = html.match(/data:image\/(?:jpeg|jpg|webp|png);base64,[A-Za-z0-9+/=]+/);
+      return match?.[0] || '';
+    } catch (_) { return ''; }
+  };
+  let source = findPoster();
+  while (!source && performance.now() - started < 20000) {
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    source = findPoster();
+  }
+  if (!source) throw new Error('The exact poster artwork could not be recovered from the protected legacy payload.');
+  poster.src = source;
+  await poster.decode().catch(() => {});
+  $$('[data-poster-copy]').forEach((image) => { image.src = source; });
+  vault.remove();
+}
+
+async function init() {
+  await hydratePosterFromVault();
+  const posterSource = $('#posterSource');
+  if (posterSource) {
+    $$('[data-poster-copy]').forEach((image) => { image.src = posterSource.src; });
+  }
+  initAgeGate();
+  initPosterInteractions();
+  initPageProgress();
+  updateValidationUI();
+  Game.init();
+  initEnding();
+  const bestReadout = $('#bestScore');
+  if (bestReadout) bestReadout.textContent = String(Number(safeStorage.get('powrhouse-best', '0') || 0)).padStart(6, '0');
+}
+
+init().catch((error) => { console.error(error); document.body.classList.add('boot-error'); });
