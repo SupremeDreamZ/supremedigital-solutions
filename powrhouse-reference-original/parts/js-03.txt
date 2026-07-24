@@ -1,4 +1,4 @@
-32, -bullet.radius * 0.32, bullet.radius * 0.64, bullet.radius * 0.64);
+ullet.radius * 0.64, bullet.radius * 0.64);
     } else {
       context.beginPath();
       context.arc(0, 0, bullet.radius, 0, Math.PI * 2);
@@ -381,6 +381,7 @@ function initEnding() {
   });
 }
 
+
 async function hydratePosterFromVault() {
   const poster = $('#posterSource');
   const vault = $('#posterVault');
@@ -395,14 +396,16 @@ async function hydratePosterFromVault() {
       const candidates = [...doc.images];
       const exact = candidates.find((img) => img.naturalWidth === 864 && img.naturalHeight === 1536 && img.src.startsWith('data:image/'));
       if (exact) return exact.src;
-      const html = doc.documentElement?.outerHTML || '';
-      const match = html.match(/data:image\/(?:jpeg|jpg|webp|png);base64,[A-Za-z0-9+/=]+/);
+      const sourceHtml = doc.documentElement?.outerHTML || '';
+      const match = sourceHtml.match(/data:image\/(?:jpeg|jpg|webp|png);base64,[A-Za-z0-9+/=]+/);
       return match?.[0] || '';
-    } catch (_) { return ''; }
+    } catch (error) {
+      return '';
+    }
   };
   let source = findPoster();
-  while (!source && performance.now() - started < 20000) {
-    await new Promise((resolve) => setTimeout(resolve, 120));
+  while (!source && performance.now() - started < 30000) {
+    await new Promise((resolve) => window.setTimeout(resolve, 120));
     source = findPoster();
   }
   if (!source) throw new Error('The exact poster artwork could not be recovered from the protected legacy payload.');
@@ -428,4 +431,8 @@ async function init() {
   if (bestReadout) bestReadout.textContent = String(Number(safeStorage.get('powrhouse-best', '0') || 0)).padStart(6, '0');
 }
 
-init().catch((error) => { console.error(error); document.body.classList.add('boot-error'); });
+init().catch((error) => {
+  document.body.classList.add('boot-error');
+  document.body.style.visibility = 'visible';
+  showToast(error.message, 8000);
+});
