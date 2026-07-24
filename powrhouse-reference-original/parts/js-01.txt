@@ -1,4 +1,6 @@
-is.togglePause();
+chWeapon(1);
+      if (key === 'c') this.whiteAsh();
+      if (key === 'p' || key === 'escape') this.togglePause();
     }, { passive: false });
     window.addEventListener('keyup', (event) => {
       this.keys[event.key.toLowerCase()] = false;
@@ -414,4 +416,3 @@ is.togglePause();
           this.enemyBullets.push({ x: enemy.x, y: enemy.y, vx: random(-90, 90), vy: random(220, 285), radius: 4, color: '#ffb761', kind: 'shard' });
         } else if (enemy.type === 'disruptor') {
           [-0.28, 0, 0.28].forEach((angle) => {
-            this.enemyBullets.push
