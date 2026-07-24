@@ -1,42 +1,239 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#070806">
-<title>PowrHouse — Cultivate. Validate. Showcase.</title>
-<style>
-html,body{height:100%;margin:0;background:#070806;color:#e8dfcf;font-family:Arial,Helvetica,sans-serif}body{display:grid;place-items:center;overflow:hidden}main{width:min(86vw,620px)}.logo{color:#f13b34;font:900 italic clamp(2.2rem,8vw,5rem)/.9 Impact,'Arial Narrow Bold',sans-serif;text-shadow:2px 2px #000}p{font:900 .72rem/1.4 monospace;letter-spacing:.13em;color:#aaa798}.track{height:8px;border:1px solid #393b32;background:#10120e}.bar{height:100%;width:0;background:#c8ff38;box-shadow:0 0 16px #c8ff38;transition:width .18s ease}pre{color:#ff665f;white-space:pre-wrap;line-height:1.5}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050605">
+  <meta name="description" content="PowrHouse poster-accurate interactive cultivation showcase with a playable validation arcade finale. Adults 21+ only.">
+  <title>PowrHouse — Cultivate. Validate. Showcase.</title>
+  <style>html{background:#050605}body{visibility:hidden}body.boot-ready{visibility:visible}</style>
+  <script>
+    window.__POWR_PARTS__ = {
+      css: ['parts/css-00.txt','parts/css-01.txt','parts/css-02.txt'],
+      js: ['parts/js-00.txt','parts/js-01.txt','parts/js-02.txt','parts/js-03.txt']
+    };
+    window.__POWR_BOOT__ = (async () => {
+      const read = async (path) => {
+        const response = await fetch(path, {cache:'no-store'});
+        if (!response.ok) throw new Error(`${path} failed with HTTP ${response.status}`);
+        return response.text();
+      };
+      const css = (await Promise.all(window.__POWR_PARTS__.css.map(read))).join('');
+      const style = document.createElement('style');
+      style.textContent = css;
+      document.head.appendChild(style);
+      return true;
+    })();
+  </script>
 </head>
-<body><main><div class="logo">PowrHouse.</div><p id="status">ASSEMBLING ORIGINAL EXPERIENCE · 0%</p><div class="track"><div id="bar" class="bar"></div></div><pre id="error" hidden></pre></main>
-<script>
-(async()=>{
-const files=['./payload/gz-00.b64','./payload/gz-01.b64','./payload/gz-02.b64'];
-const compressedHash='78373ef7d05c6ea2a87f98794e317bc84633c9e552129dbc7e21cc7d15b8c2e8';
-const htmlHash='aa1535fb06ad4658f6361118ec67db696c1279c82dd45d6eda2d9281e6f2389c';
-const status=document.getElementById('status'),bar=document.getElementById('bar'),error=document.getElementById('error');
-const hex=b=>[...new Uint8Array(b)].map(v=>v.toString(16).padStart(2,'0')).join('');
-try{
- if(typeof DecompressionStream==='undefined')throw new Error('This browser needs gzip stream support. Use a current Safari, Chrome, Edge or Firefox release.');
- let encoded='';
- for(let i=0;i<files.length;i++){
-  const r=await fetch(files[i],{cache:'no-store'});
-  if(!r.ok)throw new Error(`Site payload ${i+1} failed: HTTP ${r.status}`);
-  encoded+=(await r.text()).trim();
-  const p=Math.round(((i+1)/files.length)*72);status.textContent=`ASSEMBLING ORIGINAL EXPERIENCE · ${p}%`;bar.style.width=`${p}%`;
- }
- const raw=atob(encoded),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
- status.textContent='VERIFYING BUILD · 82%';bar.style.width='82%';
- const actualCompressed=hex(await crypto.subtle.digest('SHA-256',bytes));
- if(actualCompressed!==compressedHash)throw new Error(`Compressed payload integrity mismatch. Expected ${compressedHash}, received ${actualCompressed}.`);
- status.textContent='DECOMPRESSING THE HOUSE · 91%';bar.style.width='91%';
- const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
- const html=await new Response(stream).text();
- const actualHtml=hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(html)));
- if(actualHtml!==htmlHash)throw new Error(`Decoded site integrity mismatch. Expected ${htmlHash}, received ${actualHtml}.`);
- status.textContent='OPENING THE HOUSE · 100%';bar.style.width='100%';
- document.open();document.write(html);document.close();
-}catch(e){status.textContent='LOAD FAILURE';error.hidden=false;error.textContent=e.message+'\n\nReload once. If it persists, use the downloadable standalone build.';}
-})();
-</script></body></html>
+<body>
+  <a class="skip-link" href="#poster">Skip to poster</a>
+
+  <div class="age-gate" id="ageGate" role="dialog" aria-modal="true" aria-labelledby="ageGateTitle">
+    <div class="age-paper">
+      <p class="micro">AGE CHECK // CALIFORNIA</p>
+      <div class="age-logo" aria-label="PowrHouse">PowrHouse.</div>
+      <p class="age-scribble">LOUD FLOWER. WEIRDLY SERIOUS.</p>
+      <h1 id="ageGateTitle">THIS HOUSE IS 21+.</h1>
+      <p>Confirm that you are at least 21 years old to enter this cannabis brand concept experience.</p>
+      <div class="age-actions">
+        <button class="paper-button lime" id="ageEnter" type="button">I’M 21+ <span aria-hidden="true">→</span></button>
+        <button class="paper-button dark" id="ageLeave" type="button">LEAVE</button>
+      </div>
+      <small>Keep out of reach of children and pets. Please consume responsibly.</small>
+    </div>
+  </div>
+
+  <div class="page-progress" aria-hidden="true"><i id="pageProgressFill"></i></div>
+
+  <iframe id="posterVault" src="legacy.html" title="" aria-hidden="true" tabindex="-1" style="position:fixed;left:-10000px;top:-10000px;width:2px;height:2px;opacity:0;pointer-events:none;border:0"></iframe>
+
+  <main>
+    <section class="poster-zone" id="poster" tabindex="-1" aria-label="Interactive PowrHouse poster">
+      <div class="poster-frame" id="posterFrame">
+        <img
+          class="poster-image"
+          id="posterSource"
+          src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+          width="864"
+          height="1536"
+          alt="PowrHouse illustrated poster featuring a cannabis cola, cultivation room, proof panels, smoke test, flavor cards, retailer map, and adult-use notice."
+        >
+
+        <button class="poster-hotspot cart-hotspot" type="button" data-action="cart" aria-label="Open cart notice"></button>
+        <button class="poster-hotspot menu-hotspot" type="button" data-action="menu" aria-label="Open poster navigation"></button>
+        <button class="poster-hotspot shop-hotspot" type="button" data-action="shop" aria-label="Jump to flower flavors"></button>
+        <button class="poster-hotspot plant-hotspot" type="button" data-action="plant" aria-label="Inspect the hero cannabis cola"></button>
+        <button class="poster-hotspot grow-hotspot" type="button" data-action="grow" aria-label="Inspect cultivation methods"></button>
+        <button class="poster-hotspot token-hotspot token-genetics" type="button" data-token="genetics" aria-label="Validate genetics"></button>
+        <button class="poster-hotspot token-hotspot token-tested" type="button" data-token="tested" aria-label="Validate testing"></button>
+        <button class="poster-hotspot token-hotspot token-consistency" type="button" data-token="consistency" aria-label="Validate consistency"></button>
+        <button class="poster-hotspot token-hotspot token-burn" type="button" data-token="burn" aria-label="Validate white ash burn"></button>
+
+        <button class="poster-hotspot strain-hotspot strain-1" type="button" data-strain="Purple Splash" aria-label="View Purple Splash flavor card"></button>
+        <button class="poster-hotspot strain-hotspot strain-2" type="button" data-strain="Blueberry Pancakes" aria-label="View Blueberry Pancakes flavor card"></button>
+        <button class="poster-hotspot strain-hotspot strain-3" type="button" data-strain="Loud Zkittles" aria-label="View Loud Zkittles flavor card"></button>
+        <button class="poster-hotspot strain-hotspot strain-4" type="button" data-strain="Gelato Cake" aria-label="View Gelato Cake flavor card"></button>
+        <button class="poster-hotspot strain-hotspot strain-5" type="button" data-strain="Durban Dynamite" aria-label="View Durban Dynamite flavor card"></button>
+        <button class="poster-hotspot retailer-hotspot" type="button" data-action="retailers" aria-label="Open official PowrHouse website"></button>
+
+        <div class="validation-stamp" id="validationStamp" aria-live="polite" hidden>
+          <span id="validationStampCount">0/4</span>
+          <strong>VALIDATED</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="arcade-transition" id="arcade">
+      <div class="torn-rule" aria-hidden="true"></div>
+      <div class="arcade-intro poster-extension" id="arcadeIntro">
+        <header class="arcade-poster-header">
+          <div>
+            <p class="micro lime-text">FINAL VALIDATION // ARCADE PROTOCOL</p>
+            <h2>VALIDATE.<br>THEN <em>DEFEND.</em></h2>
+            <p class="scribble-line">THE PROOF CARDS BECOME THE LOADOUT.</p>
+          </div>
+          <div class="arcade-warning">NOT YOUR<br>CORPORATE<br>CROP. ☹</div>
+        </header>
+
+        <div class="arcade-poster-body">
+          <div class="loadout-column">
+            <p class="arcade-deck-copy">Protect the grow from gray, flavorless corporate crop. Tap the four proof panels in the poster to arm every system before launch.</p>
+            <div class="loadout" id="loadout" aria-live="polite">
+              <article data-module="genetics" data-scroll-pixel="760" role="button" tabindex="0" aria-label="Return to the genetics proof card in the poster"><i class="loadout-icon icon-genetics" aria-hidden="true"></i><span>01</span><strong>GENETICS</strong><small>Precision shot</small></article>
+              <article data-module="tested" data-scroll-pixel="760" role="button" tabindex="0" aria-label="Return to the tested proof card in the poster"><i class="loadout-icon icon-tested" aria-hidden="true"></i><span>02</span><strong>TESTED</strong><small>Spread shot</small></article>
+              <article data-module="consistency" data-scroll-pixel="760" role="button" tabindex="0" aria-label="Return to the consistency proof card in the poster"><i class="loadout-icon icon-consistency" aria-hidden="true"></i><span>03</span><strong>CONSISTENCY</strong><small>Root shield</small></article>
+              <article data-module="burn" data-scroll-pixel="940" role="button" tabindex="0" aria-label="Return to the white ash proof card in the poster"><i class="loadout-icon icon-burn" aria-hidden="true"></i><span>04</span><strong>WHITE ASH</strong><small>Screen purge</small></article>
+            </div>
+          </div>
+
+          <div class="arcade-art" aria-hidden="true">
+            <div class="arcade-target-label">PROTECT<br>THE HOUSE.</div>
+            <div class="poster-crop hero-crop"><img data-poster-copy alt=""></div>
+            <div class="crosshair-ring"></div>
+            <div class="enemy-stamp">GRAY CROP<br>INBOUND →</div>
+          </div>
+        </div>
+
+        <div class="validation-path" aria-hidden="true">
+          <span>CULTIVATE</span><i></i><span>VALIDATE</span><i></i><span>DEFEND</span><i></i><span>SHOWCASE</span>
+        </div>
+
+        <div class="arcade-launch-strip">
+          <div class="arcade-options">
+            <label><input id="reduceShake" type="checkbox"> REDUCE SHAKE</label>
+            <label><input id="reduceFlash" type="checkbox"> REDUCE FLASHES</label>
+          </div>
+          <div class="arcade-actions">
+            <button class="paper-button lime large" id="playGame" type="button">BEGIN VALIDATION <span aria-hidden="true">→</span></button>
+            <button class="paper-button dark" id="viewEnding" type="button">VIEW ENDING</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="game-shell" id="gameShell" hidden>
+        <canvas id="gameCanvas" aria-label="PowrHouse Validation Defense fixed shooter game"></canvas>
+
+        <div class="game-hud" aria-live="polite">
+          <div class="hud-ticket"><small>SCORE</small><strong id="scoreReadout">000000</strong></div>
+          <div class="hud-ticket"><small>COMBO</small><strong id="comboReadout">x1</strong></div>
+          <div class="hud-ticket"><small>WAVE</small><strong id="waveReadout">1/5</strong></div>
+          <div class="hud-meter"><small>HOUSE</small><i><b id="healthBar"></b></i></div>
+          <div class="hud-meter ash-meter"><small>WHITE ASH</small><i><b id="ashBar"></b></i></div>
+          <button id="pauseGame" type="button" aria-label="Pause game">Ⅱ</button>
+          <button id="fullscreenGame" type="button" aria-label="Toggle fullscreen">⛶</button>
+          <button id="muteGame" type="button" aria-label="Mute game">◖×</button>
+        </div>
+
+        <div class="game-help">
+          <span id="weaponReadout">GENETICS // PRECISION</span>
+          <small>WASD / ARROWS · SPACE · Q/E · C</small>
+        </div>
+
+        <div class="game-edge-copy edge-left" aria-hidden="true">CULTIVATE // VALIDATE</div>
+        <div class="game-edge-copy edge-right" aria-hidden="true">LOUD FLOWER // NO GRAY CROP</div>
+
+        <div class="touch-controls" id="touchControls">
+          <div class="touch-move" id="touchMove"><span>DRAG TO MOVE<br>AUTO-FIRE</span></div>
+          <div class="touch-actions">
+            <button id="touchSwitch" type="button">SWITCH</button>
+            <button id="touchAsh" type="button">WHITE ASH</button>
+          </div>
+        </div>
+
+        <div class="game-overlay" id="gameOverlay" hidden></div>
+      </div>
+    </section>
+
+    <section class="ending poster-extension" id="ending" hidden>
+      <div class="ending-heading">
+        <p class="micro lime-text">VALIDATION COMPLETE</p>
+        <h2>GOOD WEED<br>SHOULD BE <em>GOOD.</em><br>PERIOD.</h2>
+        <p class="scribble-line">CULTIVATION. PROOF. BURN. FLAVOR. PEOPLE.</p>
+      </div>
+      <div class="ending-grid">
+        <div class="ending-art" aria-hidden="true">
+          <div class="poster-crop storefront-crop"><img data-poster-copy alt=""></div>
+          <div class="poster-crop mascot-crop"><img data-poster-copy alt=""></div>
+          <div class="ending-note">COME GET<br>LOUD.</div>
+        </div>
+        <div class="ending-copy">
+          <p>The final point is the same one the poster makes: cultivation, proof, burn quality, flavor, and real people all have to agree. One shiny number does not get to run the whole show.</p>
+          <div class="ending-stats">
+            <span>BEST SCORE <b id="bestScore">000000</b></span>
+            <span>HOUSE STATUS <b>STILL WEIRD</b></span>
+          </div>
+          <button class="paper-button lime" id="restartExperience" type="button">RUN IT BACK <span aria-hidden="true">↑</span></button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="poster-menu" id="posterMenu" hidden role="dialog" aria-modal="true" aria-label="Poster navigation">
+    <div class="menu-brand">PowrHouse.</div>
+    <p class="menu-note">PICK A PANEL. THE POSTER DOES THE REST.</p>
+    <button class="menu-close" id="closeMenu" type="button" aria-label="Close menu">×</button>
+    <a href="#poster">CULTIVATE.</a>
+    <a href="#poster" data-scroll-y="490">GROWN DIFFERENT.</a>
+    <a href="#poster" data-scroll-y="760">WHY POWRHOUSE?</a>
+    <a href="#poster" data-scroll-y="940">SMOKE DIFFERENT.</a>
+    <a href="#poster" data-scroll-y="1125">FLAVOR THAT HITS.</a>
+    <a href="#arcade">PLAY THE FINALE.</a>
+  </aside>
+
+  <dialog class="strain-dialog" id="strainDialog">
+    <button class="dialog-close" id="closeStrain" type="button" aria-label="Close">×</button>
+    <p class="micro lime-text">FLAVOR CARD</p>
+    <h2 id="strainName">PURPLE SPLASH</h2>
+    <p id="strainDescription"></p>
+    <div id="strainTags" class="strain-tags"></div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <footer>
+    <strong>PowrHouse.</strong>
+    <p>Interactive concept based directly on the supplied poster artwork. No cannabis transactions occur on this website.</p>
+    <small>For adults 21 years of age and older. Keep out of reach of children and pets. Please consume responsibly.</small>
+  </footer>
+
+  <noscript><div class="noscript">JavaScript is required for the interactive proof cards and arcade finale.</div></noscript>
+  <script>
+    window.__POWR_BOOT__.then(async () => {
+      const read = async (path) => {
+        const response = await fetch(path, {cache:'no-store'});
+        if (!response.ok) throw new Error(`${path} failed with HTTP ${response.status}`);
+        return response.text();
+      };
+      const code = (await Promise.all(window.__POWR_PARTS__.js.map(read))).join('');
+      const script = document.createElement('script');
+      script.textContent = code + '\n//# sourceURL=powrhouse-app.js';
+      document.body.appendChild(script);
+      document.body.classList.add('boot-ready');
+    }).catch((error) => {
+      document.body.style.visibility = 'visible';
+      document.body.innerHTML = `<main style="max-width:720px;margin:15vh auto;padding:2rem;color:#eee;font:700 16px/1.5 Arial"><h1>THE HOUSE DID NOT LOAD.</h1><p>${error.message}</p><button onclick="location.reload()">RELOAD</button></main>`;
+    });
+  </script>
+</body>
+</html>
